@@ -6,6 +6,8 @@ export default function TeacherList({ onNavigate, onViewTeacher }) {
   const [search, setSearch] = useState('');
   const [teachers, setTeachers] = useState(getTeachers());
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   const filtered = teachers.filter(t => {
     const term = search.toLowerCase();
@@ -21,6 +23,32 @@ export default function TeacherList({ onNavigate, onViewTeacher }) {
     deleteTeacher(id);
     setTeachers(getTeachers());
     setDeleteConfirm(null);
+  };
+
+  const handleToggleSelect = (id, e) => {
+    e.stopPropagation();
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(new Set(filtered.map(t => t.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleBulkDelete = () => {
+    selectedIds.forEach(id => deleteTeacher(id));
+    setTeachers(getTeachers());
+    setSelectedIds(new Set());
+    setBulkDeleteConfirm(false);
   };
 
   return (
@@ -65,17 +93,38 @@ export default function TeacherList({ onNavigate, onViewTeacher }) {
           )}
         </div>
       ) : (
-        <div className="teacher-grid stagger-in">
-          {filtered.map(teacher => (
-            <TeacherCard
-              key={teacher.id}
-              teacher={teacher}
-              onView={() => onViewTeacher(teacher.id)}
-              onEdit={() => onNavigate('edit-teacher', teacher)}
-              onDelete={() => setDeleteConfirm(teacher)}
-            />
-          ))}
-        </div>
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', background: 'var(--bg-glass)', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: 'var(--text-primary)' }}>
+              <input 
+                type="checkbox" 
+                checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                onChange={handleSelectAll}
+                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+              />
+              全選 ({selectedIds.size} / {filtered.length})
+            </label>
+            
+            {selectedIds.size > 0 && (
+              <button className="btn btn-danger btn-sm" onClick={() => setBulkDeleteConfirm(true)}>
+                🗑️ 刪除已選 ({selectedIds.size})
+              </button>
+            )}
+          </div>
+          <div className="teacher-grid stagger-in">
+            {filtered.map(teacher => (
+              <TeacherCard
+                key={teacher.id}
+                teacher={teacher}
+                isSelected={selectedIds.has(teacher.id)}
+                onToggleSelect={(e) => handleToggleSelect(teacher.id, e)}
+                onView={() => onViewTeacher(teacher.id)}
+                onEdit={() => onNavigate('edit-teacher', teacher)}
+                onDelete={() => setDeleteConfirm(teacher)}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Delete Confirm Modal */}
@@ -96,6 +145,30 @@ export default function TeacherList({ onNavigate, onViewTeacher }) {
               <button className="btn btn-secondary" onClick={() => setDeleteConfirm(null)}>取消</button>
               <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm.id)} id="btn-confirm-delete">
                 🗑️ 確認刪除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirm Modal */}
+      {bulkDeleteConfirm && (
+        <div className="modal-overlay" onClick={() => setBulkDeleteConfirm(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">⚠️ 確認批量刪除</h3>
+              <button className="modal-close" onClick={() => setBulkDeleteConfirm(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <p className="confirm-message">
+                確定要刪除已選擇的<strong> {selectedIds.size} </strong>位老師嗎？<br />
+                此操作將同時刪除這些老師的所有排程記錄，且無法復原。
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setBulkDeleteConfirm(false)}>取消</button>
+              <button className="btn btn-danger" onClick={handleBulkDelete}>
+                🗑️ 確認刪除全部
               </button>
             </div>
           </div>

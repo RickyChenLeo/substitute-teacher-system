@@ -1,13 +1,20 @@
-export default function TeacherCard({ teacher, onView, onEdit, onDelete }) {
+export default function TeacherCard({ teacher, onView, onEdit, onDelete, isSelected, onToggleSelect }) {
   const initial = teacher.name ? teacher.name.charAt(0) : '?';
   const subjects = teacher.recommendedSubjects || [];
   const topSubjects = subjects.filter(s => s.confidence === 'HIGH' || s.confidence === 'MEDIUM').slice(0, 4);
 
   return (
-    <div className="teacher-card" onClick={onView} id={`teacher-card-${teacher.id}`}>
+    <div className={`teacher-card ${isSelected ? 'selected' : ''}`} onClick={onView} id={`teacher-card-${teacher.id}`} style={{ position: 'relative', border: isSelected ? '2px solid var(--primary-500)' : undefined }}>
       <div className="teacher-card-gradient" />
       <div className="teacher-card-body">
         <div className="teacher-card-header">
+          <input 
+            type="checkbox" 
+            checked={isSelected}
+            onChange={onToggleSelect}
+            onClick={e => e.stopPropagation()}
+            style={{ width: '20px', height: '20px', cursor: 'pointer', marginRight: '8px' }}
+          />
           <div className="teacher-avatar">{initial}</div>
           <div>
             <div className="teacher-name">{teacher.name}</div>
