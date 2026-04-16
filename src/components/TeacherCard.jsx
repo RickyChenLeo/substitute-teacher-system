@@ -4,7 +4,7 @@ export default function TeacherCard({ teacher, onView, onEdit, onDelete, isSelec
   const topSubjects = subjects.filter(s => s.confidence === 'HIGH' || s.confidence === 'MEDIUM').slice(0, 4);
 
   return (
-    <div className={`teacher-card ${isSelected ? 'selected' : ''}`} onClick={onView} id={`teacher-card-${teacher.id}`} style={{ position: 'relative', border: isSelected ? '2px solid var(--primary-500)' : undefined }}>
+    <div className={`teacher-card ${isSelected ? 'selected' : ''}`} onClick={onToggleSelect} id={`teacher-card-${teacher.id}`} style={{ position: 'relative', border: isSelected ? '2px solid var(--primary-500)' : undefined }}>
       <div className="teacher-card-gradient" />
       <div className="teacher-card-body">
         <div className="teacher-card-header">
