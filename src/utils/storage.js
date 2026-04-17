@@ -122,6 +122,29 @@ export function getAvailableTeachers(dateStr) {
   return allTeachers.filter(t => !busyTeacherIds.includes(t.id));
 }
 
+/**
+ * 取得指定日期「且該時段無重疊」的空閒老師
+ * @param {string} dateStr - YYYY-MM-DD
+ * @param {number[]} periodsToCheck - 欲派代的節次陣列
+ * @returns {Array} 老師陣列
+ */
+export function getAvailableTeachersForPeriods(dateStr, periodsToCheck) {
+  const allTeachers = getTeachers();
+  const daySchedules = getSchedulesByDate(dateStr).filter(s => s.status !== 'rejected');
+  
+  return allTeachers.filter(t => {
+    // 找出這位老師當天的所有排程
+    const tSchedules = daySchedules.filter(s => s.teacherId === t.id);
+    if (tSchedules.length === 0) return true; // 當天沒排程 -> 完全空閒
+    
+    // 如果有排程，檢查「節次」是否有重疊
+    const busyPeriods = tSchedules.flatMap(s => s.classPeriods || []);
+    // periodsToCheck 是否與 busyPeriods 有交集
+    const hasOverlap = periodsToCheck.some(p => busyPeriods.includes(p));
+    return !hasOverlap;
+  });
+}
+
 // ====== 資料匯出/匯入 ======
 
 /**

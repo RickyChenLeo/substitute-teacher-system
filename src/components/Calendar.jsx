@@ -165,89 +165,61 @@ export default function Calendar() {
                 {selectedSchedules.map(s => {
                   const periodBadge = getPeriodTypeBadge(s);
                   return (
-                    <div key={s.id} className="schedule-item-enhanced">
-                      {/* 上方：請假老師 → 代課老師 */}
-                      <div className="schedule-item-top">
-                        <div className="schedule-flow">
-                          <span className="schedule-leave-teacher">
-                            🚫 {s.leaveTeacherName || '未指定'}
-                          </span>
-                          <span className="schedule-arrow">→</span>
-                          <span className="schedule-sub-teacher">
-                            👤 {getTeacherName(s.teacherId)}
-                          </span>
-                        </div>
-                        <span
-                          className="schedule-status"
-                          style={{
+                    <div key={s.id} className="schedule-item-compact">
+                      <div className="compact-main" style={{ flex: 1 }}>
+                        <div className="compact-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span className={`compact-status ${s.status}`} style={{
                             background: STATUS_MAP[s.status]?.bg,
-                            color: STATUS_MAP[s.status]?.color
-                          }}
-                        >
-                          {STATUS_MAP[s.status]?.label}
-                        </span>
-                      </div>
-
-                      {/* 中間：科目 + 節次類型 + 班級 */}
-                      <div className="schedule-item-detail">
-                        <span className="schedule-detail-tag schedule-subject-tag">
-                          📚 {s.subject || '未指定'}
-                        </span>
-                        <span className={`schedule-detail-tag ${periodBadge.cls}`}>
-                          {periodBadge.label}
-                        </span>
-                        {s.className && (
-                          <span className="schedule-detail-tag schedule-class-tag">
-                            🏫 {s.className}
+                            color: STATUS_MAP[s.status]?.color,
+                            padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'
+                          }}>
+                            {STATUS_MAP[s.status]?.label}
                           </span>
-                        )}
-                      </div>
-
-                      {/* 節次顯示 */}
-                      <div className="schedule-periods-display">
-                        {s.periodType === 'single' ? (
-                          <span className="period-pill active-period">第{s.period}節</span>
-                        ) : (
-                          (s.classPeriods || []).map(p => (
-                            <span key={p} className="period-pill active-period">第{p}節</span>
-                          ))
-                        )}
-                      </div>
-
-                      {/* 備註 */}
-                      {s.note && (
-                        <div className="schedule-note-line">
-                          💬 {s.note}
+                          <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                            <span style={{opacity: 0.6}}>{s.leaveTeacherName || '未填'}</span> <span style={{margin:'0 4px', opacity:0.3}}>→</span> <span style={{color: 'var(--primary-400)'}}>{getTeacherName(s.teacherId)}</span>
+                          </span>
                         </div>
-                      )}
+                        <div className="compact-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                          {s.subject && <span>📚 {s.subject}</span>}
+                          {s.subject && <span style={{opacity: 0.3}}>|</span>}
+                          <span>🕒 {periodBadge.label} ({(s.classPeriods || []).map(p => `第${p}節`).join(', ')})</span>
+                          {s.className && (
+                            <>
+                              <span style={{opacity: 0.3}}>|</span>
+                              <span>🏫 {s.className}</span>
+                            </>
+                          )}
+                        </div>
+                        {s.note && (
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px', background: 'var(--bg-glass)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
+                            💬 {s.note}
+                          </div>
+                        )}
+                      </div>
 
-                      {/* 操作按鈕 */}
-                      <div className="schedule-actions">
+                      <div className="compact-actions" style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginLeft: '12px' }}>
                         {s.status === 'pending' && (
-                          <>
+                          <div style={{ display: 'flex', gap: '4px' }}>
                             <button
-                              className="btn btn-sm btn-secondary"
+                              className="btn-icon"
+                              style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}
                               onClick={() => handleStatusChange(s.id, 'confirmed')}
                               title="確認"
-                            >
-                              ✅
-                            </button>
+                            >✅</button>
                             <button
-                              className="btn btn-sm btn-secondary"
+                              className="btn-icon"
+                              style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}
                               onClick={() => handleStatusChange(s.id, 'rejected')}
                               title="拒絕"
-                            >
-                              ❌
-                            </button>
-                          </>
+                            >❌</button>
+                          </div>
                         )}
                         <button
-                          className="btn btn-sm btn-danger"
+                          className="btn-icon"
+                          style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)', width: s.status !== 'pending' ? '100%' : undefined }}
                           onClick={() => handleDeleteSchedule(s.id)}
                           title="刪除"
-                        >
-                          🗑️
-                        </button>
+                        >🗑️</button>
                       </div>
                     </div>
                   );

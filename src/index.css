@@ -1146,6 +1146,39 @@ body {
   background: var(--bg-glass-hover);
 }
 
+.schedule-item-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-fast);
+}
+
+.schedule-item-compact:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-default);
+}
+
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: opacity 0.2s;
+}
+
+.btn-icon:hover {
+  opacity: 0.8;
+}
+
 .schedule-subject {
   font-size: 14px;
   font-weight: 600;

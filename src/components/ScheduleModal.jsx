@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { formatDateChinese } from '../utils/helpers';
+import { getAvailableTeachersForPeriods } from '../utils/storage';
 
 // 限定七大科目
 const SCHEDULE_SUBJECTS = [
@@ -15,9 +16,9 @@ const SCHEDULE_SUBJECTS = [
 const PERIOD_LABELS = ['導師時間', '第一節', '第二節', '第三節', '第四節', '午休', '第五節', '第六節', '第七節'];
 
 export default function ScheduleModal({ date, teachers, onSave, onClose }) {
+  const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     leaveTeacherName: '',   // 請假老師（手動輸入）
-    teacherId: '',           // 代課老師
     subject: '',             // 代課科目
     periodType: '',          // single | halfday | fullday
     selectedPeriods: [],     // 所有模式共用：選擇的節次
@@ -57,15 +58,9 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
 
   const availablePeriods = form.periodType === 'halfday' ? halfDayPeriods : fullDayPeriods;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
+  const handleNext = () => {
     if (!form.leaveTeacherName.trim()) {
       alert('請填寫請假老師姓名');
-      return;
-    }
-    if (!form.teacherId) {
-      alert('請選擇代課老師');
       return;
     }
     if (!form.periodType) {
@@ -80,7 +75,10 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
       alert('請選擇節次');
       return;
     }
+    setStep(2);
+  };
 
+  const handleSelectTeacherAndSave = (selectedTeacherId) => {
     // 組合 period 資訊
     const periodsText = form.selectedPeriods.map(p => PERIOD_LABELS[p - 1]).join('、');
     let periodDisplay = '';
@@ -94,7 +92,7 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
 
     onSave({
       leaveTeacherName: form.leaveTeacherName.trim(),
-      teacherId: form.teacherId,
+      teacherId: selectedTeacherId,
       subject: form.subject,
       periodType: form.periodType,
       period: form.periodType,
@@ -105,6 +103,60 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
       date,
       status: 'pending'
     });
+  };
+
+  // 取空閒老師與分類
+  const recommendedTeachers = useMemo(() => {
+    if (step !== 2) return { high: [], medium: [], other: [] };
+    const available = getAvailableTeachersForPeriods(date, form.selectedPeriods);
+    
+    // 如果沒有選 form.subject (整天/半天沒選)
+    if (!form.subject) {
+      return { high: [], medium: [], other: available };
+    }
+
+    const high = [];
+    const medium = [];
+    const other = [];
+
+    available.forEach(t => {
+      const recs = t.recommendedSubjects || [];
+      const match = recs.find(s => s.name === form.subject);
+      if (match && match.confidence === 'HIGH') {
+        high.push(t);
+      } else if (match && match.confidence === 'MEDIUM') {
+        medium.push(t);
+      } else {
+        other.push(t);
+      }
+    });
+
+    return { high, medium, other };
+  }, [step, date, form.selectedPeriods, form.subject]);
+
+  const renderTeacherItem = (teacher, reason) => {
+    const initial = teacher.name.charAt(0);
+    return (
+      <div 
+        key={teacher.id} 
+        className="available-item" 
+        style={{ cursor: 'pointer', padding: '12px 16px', marginBottom: '8px', border: '1px solid var(--border-subtle)' }}
+        onClick={() => handleSelectTeacherAndSave(teacher.id)}
+      >
+        <div className="teacher-avatar" style={{ width: '36px', height: '36px', fontSize: '14px' }}>
+          {initial}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
+            {teacher.name}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            {reason}
+          </div>
+        </div>
+        <span className="available-badge">分派排程</span>
+      </div>
+    );
   };
 
   return (
@@ -120,8 +172,9 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
             📅 {formatDateChinese(date)}
           </div>
 
-          <form onSubmit={handleSubmit}>
-            {/* 請假老師 */}
+          {step === 1 && (
+            <div className="animate-in">
+              {/* 請假老師 */}
             <div className="form-group">
               <label className="form-label">請假老師 *</label>
               <input
@@ -133,23 +186,6 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
                 id="input-leave-teacher"
                 required
               />
-            </div>
-
-            {/* 代課老師 */}
-            <div className="form-group">
-              <label className="form-label">代課老師 *</label>
-              <select
-                className="form-select"
-                value={form.teacherId}
-                onChange={e => handleChange('teacherId', e.target.value)}
-                id="select-teacher"
-                required
-              >
-                <option value="">-- 選擇代課老師 --</option>
-                {teachers.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
             </div>
 
             {/* 節次類型 */}
@@ -289,13 +325,66 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
               />
             </div>
 
-            <div className="modal-footer" style={{ padding: 0 }}>
-              <button type="button" className="btn btn-secondary" onClick={onClose}>取消</button>
-              <button type="submit" className="btn btn-primary" id="btn-save-schedule">
-                ✅ 新增排程
-              </button>
+              <div className="modal-footer" style={{ padding: 0 }}>
+                <button type="button" className="btn btn-secondary" onClick={onClose}>取消</button>
+                <button type="button" className="btn btn-primary" onClick={handleNext}>
+                  下一步：搜尋推薦老師 🔎
+                </button>
+              </div>
             </div>
-          </form>
+          )}
+
+          {step === 2 && (
+            <div className="animate-in" style={{ animationName: 'slideUp', animationDuration: '0.3s' }}>
+              <div style={{ marginBottom: '20px', padding: '12px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>依據需求篩選結果：</div>
+                <div style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '4px' }}>
+                  {form.subject ? `科目：${form.subject} | ` : ''} 
+                  節次：{form.selectedPeriods.map(p => PERIOD_LABELS[p-1]).join('、')}
+                </div>
+              </div>
+
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {recommendedTeachers.high.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '14px', color: 'var(--success)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      ⭐ 最佳推薦
+                    </h4>
+                    {recommendedTeachers.high.map(t => renderTeacherItem(t, `高度符合「${form.subject}」專長`))}
+                  </div>
+                )}
+
+                {recommendedTeachers.medium.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '14px', color: 'var(--primary-400)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      👍 可以考慮
+                    </h4>
+                    {recommendedTeachers.medium.map(t => renderTeacherItem(t, `部分符合「${form.subject}」專長`))}
+                  </div>
+                )}
+
+                {recommendedTeachers.other.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      👥 其他空閒老師
+                    </h4>
+                    {recommendedTeachers.other.map(t => renderTeacherItem(t, '此時段空閒'))}
+                  </div>
+                )}
+
+                {recommendedTeachers.high.length === 0 && recommendedTeachers.medium.length === 0 && recommendedTeachers.other.length === 0 && (
+                  <div className="empty-state" style={{ padding: '24px 0' }}>
+                    <div className="empty-icon">😅</div>
+                    <p className="empty-desc">此時段沒有任何空閒老師可以安排</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-footer" style={{ padding: 0, marginTop: '24px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>← 上一步修改需求</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
