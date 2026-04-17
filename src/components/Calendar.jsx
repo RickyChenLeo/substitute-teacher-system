@@ -64,6 +64,7 @@ export default function Calendar() {
   const handleSaveSchedule = async (scheduleData) => {
     try {
       if (Array.isArray(scheduleData)) {
+        // 多筆模式：先砍舊的再加新的
         if (editingSchedule) {
           await deleteSchedule(editingSchedule.id);
         }
@@ -71,8 +72,10 @@ export default function Calendar() {
           await addSchedule(d);
         }
       } else {
-        if (scheduleData.id) {
-          await updateSchedule(scheduleData.id, scheduleData);
+        // 單筆模式
+        if (scheduleData.id || editingSchedule?.id) {
+          const targetId = scheduleData.id || editingSchedule?.id;
+          await updateSchedule(targetId, scheduleData);
         } else {
           await addSchedule(scheduleData);
         }
@@ -80,7 +83,12 @@ export default function Calendar() {
       setShowModal(false);
     } catch (error) {
       console.error('Save failed:', error);
-      alert('儲存失敗，請檢查網路連線');
+      if (error.message.includes('No document to update')) {
+        alert('偵測到數據同步異常（幻影數據），系統將自動清除該筆錯誤資料。');
+        handleRefresh();
+      } else {
+        alert('儲存失敗，請檢查網路連線');
+      }
     }
   };
 
@@ -105,7 +113,12 @@ export default function Calendar() {
       alert(`狀態已更新 [${idSuffix}]：` + (STATUS_MAP[status]?.label || status));
     } catch (error) {
       console.error('Status change failed:', error);
-      alert(`更新失敗 [${idSuffix}]：` + error.message);
+      if (error.message.includes('No document to update')) {
+        alert(`偵測到幻影資料 [${idSuffix}]，該筆記錄已從資料庫移除，畫面將進行同步。`);
+        handleRefresh();
+      } else {
+        alert(`更新失敗 [${idSuffix}]：` + error.message);
+      }
     }
   };
 
