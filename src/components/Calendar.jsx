@@ -61,28 +61,44 @@ export default function Calendar() {
     setShowModal(true);
   };
 
-  const handleSaveSchedule = (scheduleData) => {
-    if (Array.isArray(scheduleData)) {
-      if (editingSchedule) {
-        deleteSchedule(editingSchedule.id);
-      }
-      scheduleData.forEach(d => addSchedule(d));
-    } else {
-      if (scheduleData.id) {
-        updateSchedule(scheduleData.id, scheduleData);
+  const handleSaveSchedule = async (scheduleData) => {
+    try {
+      if (Array.isArray(scheduleData)) {
+        if (editingSchedule) {
+          await deleteSchedule(editingSchedule.id);
+        }
+        for (const d of scheduleData) {
+          await addSchedule(d);
+        }
       } else {
-        addSchedule(scheduleData);
+        if (scheduleData.id) {
+          await updateSchedule(scheduleData.id, scheduleData);
+        } else {
+          await addSchedule(scheduleData);
+        }
       }
+      setShowModal(false);
+    } catch (error) {
+      console.error('Save failed:', error);
+      alert('儲存失敗，請檢查網路連線');
     }
-    setShowModal(false);
   };
 
-  const handleDeleteSchedule = (id) => {
-    deleteSchedule(id);
+  const handleDeleteSchedule = async (id) => {
+    if (!window.confirm('確定要刪除此排程嗎？')) return;
+    try {
+      await deleteSchedule(id);
+    } catch (error) {
+      console.error('Delete failed:', error);
+    }
   };
 
-  const handleStatusChange = (id, status) => {
-    updateSchedule(id, { status });
+  const handleStatusChange = async (id, status) => {
+    try {
+      await updateSchedule(id, { status });
+    } catch (error) {
+      console.error('Status change failed:', error);
+    }
   };
 
   const selectedSchedules = selectedDate ? getSchedulesForDate(selectedDate) : [];
@@ -90,13 +106,14 @@ export default function Calendar() {
   const groupedSchedules = useMemo(() => {
     const groups = {};
     selectedSchedules.forEach(s => {
-      const key = `${s.leaveTeacherName}-${s.teacherId}`;
+      // 使用請假老師、代課老師與狀態作為分組基準
+      const key = `${s.leaveTeacherName}-${s.teacherId}-${s.status}`;
       if (!groups[key]) {
         groups[key] = {
           id: key,
           leaveTeacherName: s.leaveTeacherName,
           teacherId: s.teacherId,
-          status: s.status, // 以第一筆狀態為主，通常同一位老師同天假會是一樣的
+          status: s.status,
           items: []
         };
       }
