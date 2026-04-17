@@ -86,25 +86,31 @@ export default function Calendar() {
 
   const handleDeleteSchedule = async (id) => {
     if (!id) return alert('錯誤：找不到排程 ID');
-    if (!window.confirm('確定要刪除此排程嗎？')) return;
+    const idSuffix = id.slice(-5);
+    if (!window.confirm(`確定要刪除此排程嗎？\n(ID尾碼: ${idSuffix})`)) return;
     try {
       await deleteSchedule(id);
-      alert('刪除成功！');
+      alert(`刪除成功！(ID: ${idSuffix})`);
     } catch (error) {
       console.error('Delete failed:', error);
-      alert('刪除失敗：' + error.message);
+      alert(`刪除失敗 [${idSuffix}]：` + error.message);
     }
   };
 
   const handleStatusChange = async (id, status) => {
     if (!id) return alert('錯誤：找不到排程 ID');
+    const idSuffix = id.slice(-5);
     try {
       await updateSchedule(id, { status });
-      alert('狀態已更新為：' + (STATUS_MAP[status]?.label || status));
+      alert(`狀態已更新 [${idSuffix}]：` + (STATUS_MAP[status]?.label || status));
     } catch (error) {
       console.error('Status change failed:', error);
-      alert('更新失敗：' + error.message);
+      alert(`更新失敗 [${idSuffix}]：` + error.message);
     }
+  };
+
+  const handleRefresh = () => {
+    window.location.reload();
   };
 
   const selectedSchedules = selectedDate ? getSchedulesForDate(selectedDate) : [];
@@ -203,13 +209,23 @@ export default function Calendar() {
                 {selectedDate ? formatDateChinese(selectedDate) : '請選擇日期'}
               </h2>
               {selectedDate && (
-                <button
-                  className="btn btn-sm btn-primary"
-                  onClick={handleAddNew}
-                  id="btn-add-schedule"
-                >
-                  ➕ 新增
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    className="btn btn-sm"
+                    onClick={handleRefresh}
+                    title="重新讀取資料"
+                    style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}
+                  >
+                    🔄
+                  </button>
+                  <button
+                    className="btn btn-sm btn-primary"
+                    onClick={handleAddNew}
+                    id="btn-add-schedule"
+                  >
+                    ➕ 新增
+                  </button>
+                </div>
               )}
             </div>
 
