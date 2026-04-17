@@ -12,7 +12,7 @@ const SCHEDULE_SUBJECTS = [
   { id: 'health', name: '健康', icon: '❤️' },
 ];
 
-const PERIOD_LABELS = ['第一節', '第二節', '第三節', '第四節', '第五節', '第六節', '第七節', '第八節'];
+const PERIOD_LABELS = ['導師時間', '第一節', '第二節', '第三節', '第四節', '午休', '第五節', '第六節', '第七節'];
 
 export default function ScheduleModal({ date, teachers, onSave, onClose }) {
   const [form, setForm] = useState({
@@ -48,13 +48,12 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
     });
   };
 
-  // 半天可選的節次範圍
   const halfDayPeriods = useMemo(() => {
-    // 上午 1~4 節，下午 5~8 節  —— 兩段都可勾
-    return [1, 2, 3, 4, 5, 6, 7, 8];
+    // 上午下午皆可選
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9];
   }, []);
 
-  const fullDayPeriods = [1, 2, 3, 4, 5, 6, 7, 8];
+  const fullDayPeriods = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
   const availablePeriods = form.periodType === 'halfday' ? halfDayPeriods : fullDayPeriods;
 
@@ -69,12 +68,12 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
       alert('請選擇代課老師');
       return;
     }
-    if (!form.subject) {
-      alert('請選擇代課科目');
-      return;
-    }
     if (!form.periodType) {
       alert('請選擇節次類型');
+      return;
+    }
+    if (!form.subject && form.periodType === 'single') {
+      alert('請選擇代課科目');
       return;
     }
     if (form.selectedPeriods.length === 0) {
@@ -83,7 +82,7 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
     }
 
     // 組合 period 資訊
-    const periodsText = form.selectedPeriods.map(p => `第${p}節`).join('、');
+    const periodsText = form.selectedPeriods.map(p => PERIOD_LABELS[p - 1]).join('、');
     let periodDisplay = '';
     if (form.periodType === 'single') {
       periodDisplay = periodsText;
@@ -153,24 +152,6 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
               </select>
             </div>
 
-            {/* 代課科目 */}
-            <div className="form-group">
-              <label className="form-label">代課科目 *</label>
-              <div className="subject-chips">
-                {SCHEDULE_SUBJECTS.map(s => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    className={`subject-chip ${form.subject === s.name ? 'active' : ''}`}
-                    onClick={() => handleChange('subject', form.subject === s.name ? '' : s.name)}
-                  >
-                    <span className="subject-chip-icon">{s.icon}</span>
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* 節次類型 */}
             <div className="form-group">
               <label className="form-label">節次 *</label>
@@ -212,7 +193,7 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
                   </span>
                 </label>
                 <div className="period-grid">
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(p => (
                     <button
                       key={p}
                       type="button"
@@ -257,6 +238,26 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
                         {form.selectedPeriods.includes(p) ? '✓' : ''}
                       </span>
                     </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 代課科目 (選整天或半天則不強迫選) */}
+            {form.periodType !== 'fullday' && form.periodType !== 'halfday' && (
+              <div className="form-group animate-field">
+                <label className="form-label">代課科目 {form.periodType === 'single' ? '*' : ''}</label>
+                <div className="subject-chips">
+                  {SCHEDULE_SUBJECTS.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`subject-chip ${form.subject === s.name ? 'active' : ''}`}
+                      onClick={() => handleChange('subject', form.subject === s.name ? '' : s.name)}
+                    >
+                      <span className="subject-chip-icon">{s.icon}</span>
+                      {s.name}
+                    </button>
                   ))}
                 </div>
               </div>
