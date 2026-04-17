@@ -567,10 +567,32 @@ body {
 }
 
 .btn-icon {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: var(--bg-glass);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  z-index: 5;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.btn-icon:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  border-color: var(--border-default);
+}
+
+.btn-icon:active {
+  transform: translateY(0);
 }
 
 .btn-group {
@@ -1569,15 +1591,23 @@ body {
 }
 
 /* ====== Enhanced Schedule Item (Calendar Sidebar) ====== */
-.schedule-item-enhanced {
+.schedule-item-enhanced, .schedule-item-compact {
   padding: 16px;
-  background: var(--bg-glass);
+  background: var(--bg-card);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   transition: all var(--transition-fast);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.schedule-item-enhanced:hover, .schedule-item-compact:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-md);
 }
 
 .schedule-item-enhanced:hover {

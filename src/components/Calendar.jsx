@@ -244,26 +244,56 @@ export default function Calendar() {
                               )}
                             </div>
                             
-                            <div style={{ display: 'flex', gap: '4px' }}>
+                            <div style={{ display: 'flex', gap: '4px', position: 'relative', zIndex: 10 }}>
                               {s.status === 'unassigned' && (
-                                <button className="btn-icon" onClick={() => handleEdit(s)} title="分配老師" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+                                <button
+                                  type="button"
+                                  className="btn-icon"
+                                  onClick={(e) => { e.stopPropagation(); handleEdit(s); }}
+                                  title="分配老師"
+                                  style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}
+                                >
                                   🔎
                                 </button>
                               )}
                               {s.status === 'pending' && (
                                 <>
-                                  <button className="btn-icon" onClick={() => handleStatusChange(s.id, 'confirmed')} title="確認" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>
+                                  <button
+                                    type="button"
+                                    className="btn-icon"
+                                    onClick={(e) => { e.stopPropagation(); handleStatusChange(s.id, 'confirmed'); }}
+                                    title="確認"
+                                    style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}
+                                  >
                                     ✅
                                   </button>
-                                  <button className="btn-icon" onClick={() => handleStatusChange(s.id, 'rejected')} title="拒絕" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
+                                  <button
+                                    type="button"
+                                    className="btn-icon"
+                                    onClick={(e) => { e.stopPropagation(); handleStatusChange(s.id, 'rejected'); }}
+                                    title="拒絕"
+                                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}
+                                  >
                                     ❌
                                   </button>
                                 </>
                               )}
-                              <button className="btn-icon" onClick={() => handleEdit(s)} title="編輯" style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)', fontSize: '12px' }}>
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                onClick={(e) => { e.stopPropagation(); handleEdit(s); }}
+                                title="編輯"
+                                style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)' }}
+                              >
                                 ✏️
                               </button>
-                              <button className="btn-icon" onClick={() => handleDeleteSchedule(s.id)} title="刪除" style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)', fontSize: '12px' }}>
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s.id); }}
+                                title="刪除"
+                                style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)' }}
+                              >
                                 🗑️
                               </button>
                             </div>
