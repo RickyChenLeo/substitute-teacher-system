@@ -101,7 +101,19 @@ export default function BatchImport({ onNavigate, onImportSuccess }) {
 
     try {
       const existingTeachers = getTeachers();
-      const newTeachers = dataPreview.map((teacher, index) => {
+      const existingNames = new Set(existingTeachers.map(t => t.name.trim()));
+      
+      const newTeachers = [];
+      const addedNames = new Set();
+
+      dataPreview.forEach((teacher, index) => {
+        const teacherName = teacher.name.trim();
+        // 若系統已存在，或本次匯入檔案中已處理過同名者，便跳過
+        if (existingNames.has(teacherName) || addedNames.has(teacherName)) {
+          return;
+        }
+        addedNames.add(teacherName);
+
         // AI 分析科目推薦
         const recs = analyzeTeacher(teacher);
         const recommendedSubjects = recs.map(r => ({
@@ -112,19 +124,32 @@ export default function BatchImport({ onNavigate, onImportSuccess }) {
           score: r.score
         }));
 
-        // 產生唯一 ID (加上 index 確保在同一個迴圈下產生的 id 也不會重複)
+        // 產生唯一 ID
         const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5) + index;
         
-        return {
+        newTeachers.push({
           ...teacher,
           recommendedSubjects,
           id,
           createdAt: new Date().toISOString()
-        };
+        });
       });
 
+      const skippedCount = dataPreview.length - newTeachers.length;
+
+      if (newTeachers.length === 0) {
+        alert(`匯入的老師名字都在系統中了（共略過 ${skippedCount} 筆重複資料），沒有新增任何資料。`);
+        onNavigate('teachers');
+        return;
+      }
+
       saveTeachers([...existingTeachers, ...newTeachers]);
-      alert(`✅ 成功匯入 ${newTeachers.length} 位代課老師資料！`);
+      
+      const alertMsg = skippedCount > 0 
+        ? `✅ 成功匯入 ${newTeachers.length} 位全新代課老師資料！\n(已自動略過 ${skippedCount} 筆同名重複資料)`
+        : `✅ 成功匯入 ${newTeachers.length} 位代課老師資料！`;
+      
+      alert(alertMsg);
       if (onImportSuccess) onImportSuccess();
       onNavigate('teachers');
     } catch (error) {
