@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { getTeacherById, getSchedulesByTeacher, deleteSchedule, updateSchedule } from '../utils/storage';
+import { useTeachers, useSchedules, deleteSchedule, updateSchedule } from '../utils/storage';
 import { analyzeTeacher, getAnalysisSummary } from '../utils/aiEngine';
 import { formatDateChinese, STATUS_MAP } from '../utils/helpers';
 import AIRecommend from './AIRecommend';
 
 export default function TeacherDetail({ teacherId, onBack, onEdit }) {
-  const teacher = getTeacherById(teacherId);
-  const [schedules, setSchedules] = useState(getSchedulesByTeacher(teacherId));
+  const allTeachers = useTeachers();
+  const allSchedules = useSchedules();
+  
+  const teacher = allTeachers.find(t => t.id === teacherId) || null;
+  const schedules = allSchedules.filter(s => s.teacherId === teacherId);
 
   if (!teacher) {
     return (
@@ -26,12 +29,10 @@ export default function TeacherDetail({ teacherId, onBack, onEdit }) {
 
   const handleStatusChange = (scheduleId, newStatus) => {
     updateSchedule(scheduleId, { status: newStatus });
-    setSchedules(getSchedulesByTeacher(teacherId));
   };
 
   const handleDeleteSchedule = (scheduleId) => {
     deleteSchedule(scheduleId);
-    setSchedules(getSchedulesByTeacher(teacherId));
   };
 
   return (

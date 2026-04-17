@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { getTeachers, getSchedules } from './utils/storage';
+import { useState, useEffect } from 'react';
+import { useTeachers, useSchedules, initializeFirebaseSync } from './utils/storage';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import TeacherForm from './components/TeacherForm';
@@ -16,8 +16,13 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const teachers = getTeachers();
-  const schedules = getSchedules();
+  const teachers = useTeachers();
+  const schedules = useSchedules();
+
+  useEffect(() => {
+    const unsub = initializeFirebaseSync();
+    return () => unsub();
+  }, []);
 
   const navigate = (page, data) => {
     if (page === 'edit-teacher' && data) {

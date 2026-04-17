@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { getTeachers, deleteTeacher } from '../utils/storage';
+import { useTeachers, deleteTeacher } from '../utils/storage';
 import TeacherCard from './TeacherCard';
 
 export default function TeacherList({ onNavigate, onViewTeacher }) {
   const [search, setSearch] = useState('');
-  const [teachers, setTeachers] = useState(getTeachers());
+  const teachers = useTeachers();
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -21,7 +21,6 @@ export default function TeacherList({ onNavigate, onViewTeacher }) {
 
   const handleDelete = (id) => {
     deleteTeacher(id);
-    setTeachers(getTeachers());
     setDeleteConfirm(null);
   };
 
@@ -46,7 +45,6 @@ export default function TeacherList({ onNavigate, onViewTeacher }) {
 
   const handleBulkDelete = () => {
     selectedIds.forEach(id => deleteTeacher(id));
-    setTeachers(getTeachers());
     setSelectedIds(new Set());
     setBulkDeleteConfirm(false);
   };

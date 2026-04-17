@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { getTeachers, getAvailableTeachers, getSchedulesByDate } from '../utils/storage';
+import { useTeachers, useSchedules, getAvailableTeachers } from '../utils/storage';
 import { getTodayStr, formatDateChinese, STATUS_MAP } from '../utils/helpers';
 
 export default function AvailableTeachers({ onNavigate, onViewTeacher }) {
   const [queryDate, setQueryDate] = useState(getTodayStr());
-  const allTeachers = getTeachers();
+  const allTeachers = useTeachers();
+  const allSchedules = useSchedules();
   const available = getAvailableTeachers(queryDate);
-  const dateSchedules = getSchedulesByDate(queryDate);
+  const dateSchedules = allSchedules.filter(s => s.date === queryDate);
 
   const getTeacherName = (id) => {
     const t = allTeachers.find(t => t.id === id);

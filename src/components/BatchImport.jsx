@@ -96,7 +96,7 @@ export default function BatchImport({ onNavigate, onImportSuccess }) {
     reader.readAsArrayBuffer(file);
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (dataPreview.length === 0) return;
 
     try {
@@ -143,7 +143,7 @@ export default function BatchImport({ onNavigate, onImportSuccess }) {
         return;
       }
 
-      saveTeachers([...existingTeachers, ...newTeachers]);
+      await saveTeachers(newTeachers);
       
       const alertMsg = skippedCount > 0 
         ? `✅ 成功匯入 ${newTeachers.length} 位全新代課老師資料！\n(已自動略過 ${skippedCount} 筆同名重複資料)`

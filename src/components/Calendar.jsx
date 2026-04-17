@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { getSchedules, getTeachers, addSchedule, deleteSchedule, updateSchedule } from '../utils/storage';
+import { useSchedules, useTeachers, addSchedule, deleteSchedule, updateSchedule } from '../utils/storage';
 import { getMonthDays, formatDate, formatDateChinese, getTodayStr, STATUS_MAP } from '../utils/helpers';
 import ScheduleModal from './ScheduleModal';
 
@@ -10,8 +10,9 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
-  const [schedules, setSchedules] = useState(getSchedules());
-  const teachers = getTeachers();
+  
+  const schedules = useSchedules();
+  const teachers = useTeachers();
 
   const days = useMemo(() => getMonthDays(year, month), [year, month]);
   const todayStr = getTodayStr();
@@ -73,18 +74,15 @@ export default function Calendar() {
         addSchedule(scheduleData);
       }
     }
-    setSchedules(getSchedules());
     setShowModal(false);
   };
 
   const handleDeleteSchedule = (id) => {
     deleteSchedule(id);
-    setSchedules(getSchedules());
   };
 
   const handleStatusChange = (id, status) => {
     updateSchedule(id, { status });
-    setSchedules(getSchedules());
   };
 
   const selectedSchedules = selectedDate ? getSchedulesForDate(selectedDate) : [];

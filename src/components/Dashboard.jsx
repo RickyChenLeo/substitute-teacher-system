@@ -1,9 +1,9 @@
-import { getTeachers, getSchedules } from '../utils/storage';
+import { useTeachers, useSchedules } from '../utils/storage';
 import { getTodayStr, formatDateChinese, STATUS_MAP } from '../utils/helpers';
 
 export default function Dashboard({ onNavigate }) {
-  const teachers = getTeachers();
-  const schedules = getSchedules();
+  const teachers = useTeachers();
+  const schedules = useSchedules();
   const today = getTodayStr();
 
   const todaySchedules = schedules.filter(s => s.date === today);

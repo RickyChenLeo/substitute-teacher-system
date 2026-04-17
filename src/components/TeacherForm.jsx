@@ -32,7 +32,7 @@ export default function TeacherForm({ editTeacher, onSaved, onCancel }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.name.trim()) {
@@ -56,9 +56,9 @@ export default function TeacherForm({ editTeacher, onSaved, onCancel }) {
     };
 
     if (editTeacher && editTeacher.id) {
-      updateTeacher(editTeacher.id, teacherData);
+      await updateTeacher(editTeacher.id, teacherData);
     } else {
-      addTeacher(teacherData);
+      await addTeacher(teacherData);
     }
 
     onSaved();
