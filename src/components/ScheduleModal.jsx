@@ -19,13 +19,22 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
   const [step, setStep] = useState(editSchedule ? 2 : 1);
   const [form, setForm] = useState({
     leaveTeacherName: editSchedule?.leaveTeacherName || '',   // 請假老師
-    subject: editSchedule?.subject || '',             // 代課科目
+    subject: editSchedule?.subject || '',             // 代課科目 (非單節用)
     periodType: editSchedule?.periodType || '',          // single | halfday | fullday
     selectedPeriods: editSchedule?.classPeriods || [],     // 所有模式共用：選擇的節次
-    className: editSchedule?.className || '',           // 班級
+    className: editSchedule?.className || '',           // 班級 (非單節用)
     note: editSchedule?.note || ''
   });
-  
+  const [periodDetails, setPeriodDetails] = useState(() => {
+    const initial = {};
+    if (editSchedule?.id && editSchedule.classPeriods?.length > 0) {
+      editSchedule.classPeriods.forEach(p => {
+        initial[p] = { subject: editSchedule.subject || '', className: editSchedule.className || '' };
+      });
+    }
+    return initial;
+  });
+
   const activeDate = editSchedule?.date || date;
 
   const handleChange = (field, value) => {
@@ -42,13 +51,33 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
   const togglePeriod = (periodNum) => {
     setForm(prev => {
       const exists = prev.selectedPeriods.includes(periodNum);
-      return {
-        ...prev,
-        selectedPeriods: exists
-          ? prev.selectedPeriods.filter(p => p !== periodNum)
-          : [...prev.selectedPeriods, periodNum].sort((a, b) => a - b)
-      };
+      const newPeriods = exists
+        ? prev.selectedPeriods.filter(p => p !== periodNum)
+        : [...prev.selectedPeriods, periodNum].sort((a, b) => a - b);
+        
+      if (!exists && prev.periodType === 'single') {
+        setPeriodDetails(curr => {
+          if (curr[periodNum]) return curr;
+          const existingPeriods = Object.keys(curr).map(Number).sort((a,b)=>a-b);
+          let fallback = { subject: '', className: '' };
+          if (existingPeriods.length > 0) {
+            fallback = { ...curr[existingPeriods[existingPeriods.length - 1]] };
+          }
+          return { ...curr, [periodNum]: fallback };
+        });
+      }
+      return { ...prev, selectedPeriods: newPeriods };
     });
+  };
+
+  const updatePeriodDetail = (periodNum, field, value) => {
+    setPeriodDetails(prev => ({
+      ...prev,
+      [periodNum]: {
+        ...prev[periodNum] || { subject: '', className: '' },
+        [field]: value
+      }
+    }));
   };
 
   const halfDayPeriods = useMemo(() => {
@@ -60,27 +89,45 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
 
   const availablePeriods = form.periodType === 'halfday' ? halfDayPeriods : fullDayPeriods;
 
+  const validateForm = () => {
+    if (!form.leaveTeacherName.trim()) return '請填寫請假老師姓名';
+    if (!form.periodType) return '請選擇節次類型';
+    if (form.selectedPeriods.length === 0) return '請選擇節次';
+    
+    if (form.periodType === 'single') {
+      for (let p of form.selectedPeriods) {
+        if (!periodDetails[p]?.subject) return `請選擇第${PERIOD_LABELS[p-1]}的代課科目`;
+      }
+    } else {
+      if (!form.subject && form.periodType === 'single') return '請選擇代課科目'; // Fallback
+    }
+    return null;
+  };
+
   const handleNext = () => {
-    if (!form.leaveTeacherName.trim()) {
-      alert('請填寫請假老師姓名');
-      return;
-    }
-    if (!form.periodType) {
-      alert('請選擇節次類型');
-      return;
-    }
-    if (!form.subject && form.periodType === 'single') {
-      alert('請選擇代課科目');
-      return;
-    }
-    if (form.selectedPeriods.length === 0) {
-      alert('請選擇節次');
-      return;
-    }
+    const error = validateForm();
+    if (error) return alert(error);
     setStep(2);
   };
 
   const constructScheduleData = (teacherId, status) => {
+    if (form.periodType === 'single') {
+      return form.selectedPeriods.map(p => ({
+        ...(editSchedule?.id && form.selectedPeriods.length === 1 && { id: editSchedule.id }),
+        leaveTeacherName: form.leaveTeacherName.trim(),
+        teacherId,
+        subject: periodDetails[p]?.subject || '',
+        periodType: 'single',
+        period: p,
+        classPeriods: [p],
+        periodDisplay: `單節（${PERIOD_LABELS[p - 1]}）`,
+        className: periodDetails[p]?.className || '',
+        note: form.note,
+        date: activeDate,
+        status
+      }));
+    }
+
     const periodsText = form.selectedPeriods.map(p => PERIOD_LABELS[p - 1]).join('、');
     let periodDisplay = '';
     if (form.periodType === 'single') {
@@ -108,10 +155,8 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
   };
 
   const handleSaveEmpty = () => {
-    if (!form.leaveTeacherName.trim()) return alert('請填寫請假老師姓名');
-    if (!form.periodType) return alert('請選擇節次類型');
-    if (form.selectedPeriods.length === 0) return alert('請選擇節次');
-
+    const error = validateForm();
+    if (error) return alert(error);
     onSave(constructScheduleData('', 'unassigned'));
   };
 
@@ -119,13 +164,17 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
     onSave(constructScheduleData(selectedTeacherId, 'pending'));
   };
 
+  const searchSubject = form.periodType === 'single' 
+    ? periodDetails[form.selectedPeriods[0]]?.subject 
+    : form.subject;
+
   // 取空閒老師與分類
   const recommendedTeachers = useMemo(() => {
     if (step !== 2) return { high: [], medium: [], other: [] };
     const available = getAvailableTeachersForPeriods(activeDate, form.selectedPeriods);
     
-    // 如果沒有選 form.subject (整天/半天沒選)
-    if (!form.subject) {
+    // 如果沒有選 searchSubject (整天/半天沒選)
+    if (!searchSubject) {
       return { high: [], medium: [], other: available };
     }
 
@@ -135,7 +184,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
 
     available.forEach(t => {
       const recs = t.recommendedSubjects || [];
-      const match = recs.find(s => s.name === form.subject);
+      const match = recs.find(s => s.name === searchSubject);
       if (match && match.confidence === 'HIGH') {
         high.push(t);
       } else if (match && match.confidence === 'MEDIUM') {
@@ -146,7 +195,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
     });
 
     return { high, medium, other };
-  }, [step, activeDate, form.selectedPeriods, form.subject]);
+  }, [step, activeDate, form.selectedPeriods, searchSubject]);
 
   const renderTeacherItem = (teacher, reason) => {
     const initial = teacher.name.charAt(0);
@@ -293,38 +342,68 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
               </div>
             )}
 
-            {/* 代課科目 (選整天或半天則不強迫選) */}
-            {form.periodType !== 'fullday' && form.periodType !== 'halfday' && (
-              <div className="form-group animate-field">
-                <label className="form-label">代課科目 {form.periodType === 'single' ? '*' : ''}</label>
-                <div className="subject-chips">
+            {/* 代課科目 (非單節時顯示全域) */}
+            {form.periodType !== 'single' && (
+              <div className="form-group">
+                <label className="form-label">
+                  代課科目 {form.periodType === 'single' ? '*' : '(選填)'}
+                </label>
+                <div className="radio-group" style={{ flexWrap: 'wrap' }}>
                   {SCHEDULE_SUBJECTS.map(s => (
-                    <button
+                    <div
                       key={s.id}
-                      type="button"
-                      className={`subject-chip ${form.subject === s.name ? 'active' : ''}`}
-                      onClick={() => handleChange('subject', form.subject === s.name ? '' : s.name)}
+                      className={`radio-label ${form.subject === s.name ? 'active' : ''}`}
+                      onClick={() => handleChange('subject', s.name)}
                     >
-                      <span className="subject-chip-icon">{s.icon}</span>
-                      {s.name}
-                    </button>
+                      {s.icon} {s.name}
+                    </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* 班級 */}
-            <div className="form-group">
-              <label className="form-label">班級</label>
-              <input
-                className="form-input"
-                type="text"
-                placeholder="例：三年一班"
-                value={form.className}
-                onChange={e => handleChange('className', e.target.value)}
-                id="input-class"
-              />
-            </div>
+            {/* 班級 (非單節時顯示全域) */}
+            {form.periodType !== 'single' && (
+              <div className="form-group">
+                <label className="form-label">班級 (選填)</label>
+                <input
+                  className="form-input"
+                  placeholder="例如: 408班"
+                  value={form.className}
+                  onChange={e => handleChange('className', e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* 一節一單模式的逐節設定區塊 */}
+            {form.periodType === 'single' && form.selectedPeriods.length > 0 && (
+              <div className="form-group" style={{ background: 'var(--bg-glass)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <label className="form-label" style={{ marginBottom: '12px' }}>各節次科目與班級對應 *</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {form.selectedPeriods.map(p => (
+                    <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: '600', width: '70px', fontSize: '14px' }}>{PERIOD_LABELS[p-1]}</span>
+                      <select 
+                        className="form-select" 
+                        style={{ flex: 1 }}
+                        value={periodDetails[p]?.subject || ''}
+                        onChange={e => updatePeriodDetail(p, 'subject', e.target.value)}
+                      >
+                        <option value="">選擇科目</option>
+                        {SCHEDULE_SUBJECTS.map(s => <option key={s.id} value={s.name}>{s.icon} {s.name}</option>)}
+                      </select>
+                      <input 
+                        className="form-input" 
+                        style={{ flex: 1, minWidth: '80px' }}
+                        placeholder="班級" 
+                        value={periodDetails[p]?.className || ''}
+                        onChange={e => updatePeriodDetail(p, 'className', e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 備註 */}
             <div className="form-group">
@@ -358,7 +437,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
               <div style={{ marginBottom: '20px', padding: '12px', background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
                 <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>依據需求篩選結果：</div>
                 <div style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '4px' }}>
-                  {form.subject ? `科目：${form.subject} | ` : ''} 
+                  {searchSubject ? `主題科目：${searchSubject} | ` : ''} 
                   節次：{form.selectedPeriods.map(p => PERIOD_LABELS[p-1]).join('、')}
                 </div>
               </div>
@@ -369,7 +448,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                     <h4 style={{ fontSize: '14px', color: 'var(--success)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       ⭐ 最佳推薦
                     </h4>
-                    {recommendedTeachers.high.map(t => renderTeacherItem(t, `高度符合「${form.subject}」專長`))}
+                    {recommendedTeachers.high.map(t => renderTeacherItem(t, `高度符合「${searchSubject}」專長`))}
                   </div>
                 )}
 
@@ -378,7 +457,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                     <h4 style={{ fontSize: '14px', color: 'var(--primary-400)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       👍 可以考慮
                     </h4>
-                    {recommendedTeachers.medium.map(t => renderTeacherItem(t, `部分符合「${form.subject}」專長`))}
+                    {recommendedTeachers.medium.map(t => renderTeacherItem(t, `部分符合「${searchSubject}」專長`))}
                   </div>
                 )}
 

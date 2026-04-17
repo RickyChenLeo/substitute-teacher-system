@@ -61,10 +61,17 @@ export default function Calendar() {
   };
 
   const handleSaveSchedule = (scheduleData) => {
-    if (scheduleData.id) {
-      updateSchedule(scheduleData.id, scheduleData);
+    if (Array.isArray(scheduleData)) {
+      if (editingSchedule) {
+        deleteSchedule(editingSchedule.id);
+      }
+      scheduleData.forEach(d => addSchedule(d));
     } else {
-      addSchedule(scheduleData);
+      if (scheduleData.id) {
+        updateSchedule(scheduleData.id, scheduleData);
+      } else {
+        addSchedule(scheduleData);
+      }
     }
     setSchedules(getSchedules());
     setShowModal(false);
