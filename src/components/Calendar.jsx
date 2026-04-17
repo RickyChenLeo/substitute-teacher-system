@@ -111,8 +111,10 @@ export default function Calendar() {
 
   const groupedSchedules = useMemo(() => {
     const groups = {};
+    if (!selectedSchedules || selectedSchedules.length === 0) return [];
+
     selectedSchedules.forEach(s => {
-      // 使用請假老師、代課老師與狀態作為分組基準
+      // 複合 Key：確保狀態改變或 ID 變動時能正確拆分組件
       const key = `${s.leaveTeacherName}-${s.teacherId}-${s.status}`;
       if (!groups[key]) {
         groups[key] = {
@@ -126,7 +128,7 @@ export default function Calendar() {
       groups[key].items.push(s);
     });
     return Object.values(groups);
-  }, [selectedSchedules]);
+  }, [selectedSchedules, selectedDate]);
 
   // 節次類型 badge
   const getPeriodTypeBadge = (s) => {

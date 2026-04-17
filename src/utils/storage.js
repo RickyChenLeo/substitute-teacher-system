@@ -15,13 +15,16 @@ const scheduleListeners = new Set();
 // ========================
 export function initializeFirebaseSync() {
   const tUnsub = onSnapshot(collection(db, 'teachers'), snapshot => {
+    // 確保產生全新的陣列與物件參照，強迫 React 重新渲染
     memoryTeachers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    teacherListeners.forEach(cb => cb(memoryTeachers));
+    const freshTeachers = [...memoryTeachers];
+    teacherListeners.forEach(cb => cb(freshTeachers));
   });
   
   const sUnsub = onSnapshot(collection(db, 'schedules'), snapshot => {
     memorySchedules = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    scheduleListeners.forEach(cb => cb(memorySchedules));
+    const freshSchedules = [...memorySchedules];
+    scheduleListeners.forEach(cb => cb(freshSchedules));
   });
   
   return () => {
@@ -228,6 +231,7 @@ export async function importAllData(file, mode = 'merge') {
             teacherCount++;
           }
         }
+
 
         if (data.schedules && Array.isArray(data.schedules)) {
           for (const s of data.schedules) {
