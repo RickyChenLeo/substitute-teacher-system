@@ -205,7 +205,7 @@ export default function BatchImport({ onNavigate, onImportSuccess }) {
           <p className="page-subtitle">透過上傳 Excel / CSV 一次匯入多位老師資料，系統會自動進行 AI 專長分析</p>
         </div>
         <button className="btn btn-secondary" onClick={downloadTemplate}>
-          📥 下載空白範本
+          下載空白範本
         </button>
       </div>
 
@@ -253,7 +253,7 @@ export default function BatchImport({ onNavigate, onImportSuccess }) {
           )}
           
           <div className="card" style={{ marginTop: '20px' }}>
-            <h4 style={{ fontSize: '15px', marginBottom: '12px', color: 'var(--text-primary)' }}>💡 欄位對應說明：</h4>
+            <h4 style={{ fontSize: '15px', marginBottom: '12px', color: 'var(--text-primary)' }}>欄位對應說明：</h4>
             <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.8' }}>
               請確保您的檔案擁有表頭（第一列），系統會自動比對以下欄位名稱：<br/>
               • <strong>必填欄位</strong>：姓名 <br/>
@@ -266,7 +266,7 @@ export default function BatchImport({ onNavigate, onImportSuccess }) {
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <div>
-              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>📄 {fileName}</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{fileName}</h3>
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                 共解析出 {dataPreview.length} 筆有效老師資料
               </p>
@@ -274,7 +274,7 @@ export default function BatchImport({ onNavigate, onImportSuccess }) {
             <div className="btn-group">
               <button className="btn btn-secondary" onClick={cancelImport}>取消</button>
               <button className="btn btn-primary" onClick={handleImport}>
-                ✨ 開始匯入並分析
+                開始匯入並分析
               </button>
             </div>
           </div>

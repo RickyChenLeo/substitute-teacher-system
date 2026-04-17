@@ -57,7 +57,7 @@ export default function TeacherList({ onNavigate, onViewTeacher }) {
           <p className="page-subtitle">共 {teachers.length} 位代課老師</p>
         </div>
         <button className="btn btn-primary" onClick={() => onNavigate('add-teacher')} id="btn-add-teacher">
-          ➕ 登記老師
+          登記老師
         </button>
       </div>
 

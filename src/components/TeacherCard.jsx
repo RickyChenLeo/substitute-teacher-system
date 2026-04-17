@@ -18,13 +18,13 @@ export default function TeacherCard({ teacher, onView, onEdit, onDelete, isSelec
           <div className="teacher-avatar">{initial}</div>
           <div>
             <div className="teacher-name">{teacher.name}</div>
-            {teacher.phone && <div className="teacher-phone">📱 {teacher.phone}</div>}
+            {teacher.phone && <div className="teacher-phone">{teacher.phone}</div>}
           </div>
         </div>
 
         {teacher.education && (
           <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-            🎓 {teacher.education.length > 40 ? teacher.education.substring(0, 40) + '...' : teacher.education}
+            {teacher.education.length > 40 ? teacher.education.substring(0, 40) + '...' : teacher.education}
           </div>
         )}
 
@@ -45,13 +45,13 @@ export default function TeacherCard({ teacher, onView, onEdit, onDelete, isSelec
 
         <div className="teacher-card-actions" onClick={e => e.stopPropagation()}>
           <button className="btn btn-sm btn-secondary" onClick={onView}>
-            👁️ 詳情
+            詳情
           </button>
           <button className="btn btn-sm btn-secondary" onClick={onEdit}>
-            ✏️ 編輯
+            編輯
           </button>
           <button className="btn btn-sm btn-danger" onClick={onDelete}>
-            🗑️
+            刪除
           </button>
         </div>
       </div>

@@ -108,7 +108,7 @@ export default function Calendar() {
             <h2 className="calendar-title">{year}年 {monthNames[month]}</h2>
             <div className="calendar-nav">
               <button className="calendar-nav-btn" onClick={goToToday} title="今天">
-                📍
+                今
               </button>
               <button className="calendar-nav-btn" onClick={goToPrevMonth} id="cal-prev">
                 ◀
@@ -177,7 +177,7 @@ export default function Calendar() {
               </div>
             ) : selectedSchedules.length === 0 ? (
               <div className="empty-state" style={{ padding: '24px 0' }}>
-                <div className="empty-icon">✨</div>
+            <div className="empty-state" style={{ padding: '64px 24px' }}>
                 <p className="empty-desc">此日無排程安排，所有老師皆為空閒</p>
               </div>
             ) : (
@@ -203,19 +203,19 @@ export default function Calendar() {
                           </span>
                         </div>
                         <div className="compact-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                          {s.subject && <span>📚 {s.subject}</span>}
+                          {s.subject && <span>{s.subject}</span>}
                           {s.subject && <span style={{opacity: 0.3}}>|</span>}
-                          <span>🕒 {periodBadge.label} ({(s.classPeriods || []).map(p => `第${p}節`).join(', ')})</span>
+                          <span>{periodBadge.label} ({(s.classPeriods || []).map(p => `第${p}節`).join(', ')})</span>
                           {s.className && (
                             <>
                               <span style={{opacity: 0.3}}>|</span>
-                              <span>🏫 {s.className}</span>
+                              <span>{s.className}</span>
                             </>
                           )}
                         </div>
                         {s.note && (
                           <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px', background: 'var(--bg-glass)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
-                            💬 {s.note}
+                            {s.note}
                           </div>
                         )}
                       </div>

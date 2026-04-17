@@ -238,13 +238,13 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal schedule-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">➕ 新增排程</h3>
+          <h3 className="modal-title">新增排程</h3>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="modal-body">
           <div className="schedule-date-badge">
-            📅 {formatDateChinese(activeDate)}
+            {formatDateChinese(activeDate)}
           </div>
 
           {step === 1 && (
@@ -272,7 +272,6 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                   className={`period-type-btn ${form.periodType === 'single' ? 'active' : ''}`}
                   onClick={() => handleChange('periodType', 'single')}
                 >
-                  <span className="period-type-icon">1️⃣</span>
                   單節
                 </button>
                 <button
@@ -280,7 +279,6 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                   className={`period-type-btn ${form.periodType === 'halfday' ? 'active' : ''}`}
                   onClick={() => handleChange('periodType', 'halfday')}
                 >
-                  <span className="period-type-icon">🌤️</span>
                   半天
                 </button>
                 <button
@@ -288,7 +286,6 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                   className={`period-type-btn ${form.periodType === 'fullday' ? 'active' : ''}`}
                   onClick={() => handleChange('periodType', 'fullday')}
                 >
-                  <span className="period-type-icon">☀️</span>
                   整天
                 </button>
               </div>
@@ -437,7 +434,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                     儲存缺額 (暫找無人)
                   </button>
                   <button type="button" className="btn btn-primary" onClick={handleNext}>
-                    下一步：尋找代課 🔎
+                    下一步：尋找代課
                   </button>
                 </div>
               </div>
@@ -459,7 +456,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="🔍 搜尋老師姓名..."
+                  placeholder="搜尋老師姓名..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{ width: '100%' }}
@@ -470,7 +467,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                 {filteredTeachers.high.length > 0 && (
                   <div style={{ marginBottom: '20px' }}>
                     <h4 style={{ fontSize: '14px', color: 'var(--success)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      ⭐ 最佳推薦
+                      最佳推薦
                     </h4>
                     {filteredTeachers.high.map(t => renderTeacherItem(t, `高度符合「${searchSubject}」專長`))}
                   </div>
@@ -479,7 +476,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                 {filteredTeachers.medium.length > 0 && (
                   <div style={{ marginBottom: '20px' }}>
                     <h4 style={{ fontSize: '14px', color: 'var(--primary-400)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      👍 可以考慮
+                      可以考慮
                     </h4>
                     {filteredTeachers.medium.map(t => renderTeacherItem(t, `部分符合「${searchSubject}」專長`))}
                   </div>
@@ -488,7 +485,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                 {filteredTeachers.other.length > 0 && (
                   <div style={{ marginBottom: '20px' }}>
                     <h4 style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      👥 其他空閒老師
+                      其他空閒老師
                     </h4>
                     {filteredTeachers.other.map(t => renderTeacherItem(t, '此時段空閒'))}
                   </div>
@@ -496,7 +493,6 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
 
                 {filteredTeachers.high.length === 0 && filteredTeachers.medium.length === 0 && filteredTeachers.other.length === 0 && (
                   <div className="empty-state" style={{ padding: '24px 0' }}>
-                    <div className="empty-icon">😅</div>
                     <p className="empty-desc">{searchQuery ? '找不到符合搜尋條件的老師' : '此時段沒有任何空閒老師可以安排'}</p>
                   </div>
                 )}

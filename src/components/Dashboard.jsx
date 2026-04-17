@@ -75,7 +75,7 @@ export default function Dashboard({ onNavigate }) {
         {/* 近期排程 */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">📅 近期排程</h2>
+            <h2 className="card-title">近期排程</h2>
             <button className="btn btn-sm btn-secondary" onClick={() => onNavigate('calendar')}>
               查看全部
             </button>
@@ -83,7 +83,6 @@ export default function Dashboard({ onNavigate }) {
 
           {upcoming.length === 0 ? (
             <div className="empty-state" style={{ padding: '24px' }}>
-              <div className="empty-icon">📭</div>
               <p className="empty-desc">目前沒有近期排程</p>
             </div>
           ) : (
@@ -114,7 +113,7 @@ export default function Dashboard({ onNavigate }) {
         {/* 快速操作 */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">⚡ 快速操作</h2>
+            <h2 className="card-title">快速操作</h2>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -124,7 +123,7 @@ export default function Dashboard({ onNavigate }) {
               onClick={() => onNavigate('add-teacher')}
               id="quick-add-teacher"
             >
-              <span>➕</span> 登記新老師
+              登記新老師
             </button>
             <button
               className="btn btn-secondary"
@@ -132,7 +131,7 @@ export default function Dashboard({ onNavigate }) {
               onClick={() => onNavigate('calendar')}
               id="quick-calendar"
             >
-              <span>📅</span> 排程行事曆
+              排程行事曆
             </button>
             <button
               className="btn btn-secondary"
@@ -140,7 +139,7 @@ export default function Dashboard({ onNavigate }) {
               onClick={() => onNavigate('available')}
               id="quick-available"
             >
-              <span>🔍</span> 查詢空閒老師
+              查詢空閒老師
             </button>
             <button
               className="btn btn-secondary"
@@ -148,7 +147,7 @@ export default function Dashboard({ onNavigate }) {
               onClick={() => onNavigate('teachers')}
               id="quick-teachers"
             >
-              <span>👥</span> 老師列表
+              老師列表
             </button>
           </div>
         </div>
