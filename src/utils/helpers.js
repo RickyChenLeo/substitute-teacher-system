@@ -81,6 +81,7 @@ export function generateId() {
  * 狀態文字對應
  */
 export const STATUS_MAP = {
+  unassigned: { label: '待指派', color: '#6366f1', bg: 'rgba(99,102,241,0.15)' },
   pending: { label: '待確認', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
   confirmed: { label: '已確認', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
   rejected: { label: '已拒絕', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' }

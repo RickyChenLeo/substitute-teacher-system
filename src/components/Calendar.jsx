@@ -9,6 +9,7 @@ export default function Calendar() {
   const [month, setMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
   const [schedules, setSchedules] = useState(getSchedules());
   const teachers = getTeachers();
 
@@ -49,8 +50,22 @@ export default function Calendar() {
     setSelectedDate(dateStr);
   };
 
-  const handleAddSchedule = (scheduleData) => {
-    addSchedule(scheduleData);
+  const handleAddNew = () => {
+    setEditingSchedule(null);
+    setShowModal(true);
+  };
+
+  const handleEdit = (schedule) => {
+    setEditingSchedule(schedule);
+    setShowModal(true);
+  };
+
+  const handleSaveSchedule = (scheduleData) => {
+    if (scheduleData.id) {
+      updateSchedule(scheduleData.id, scheduleData);
+    } else {
+      addSchedule(scheduleData);
+    }
     setSchedules(getSchedules());
     setShowModal(false);
   };
@@ -142,7 +157,7 @@ export default function Calendar() {
               {selectedDate && (
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() => setShowModal(true)}
+                  onClick={handleAddNew}
                   id="btn-add-schedule"
                 >
                   ➕ 新增
@@ -176,7 +191,10 @@ export default function Calendar() {
                             {STATUS_MAP[s.status]?.label}
                           </span>
                           <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                            <span style={{opacity: 0.6}}>{s.leaveTeacherName || '未填'}</span> <span style={{margin:'0 4px', opacity:0.3}}>→</span> <span style={{color: 'var(--primary-400)'}}>{getTeacherName(s.teacherId)}</span>
+                            <span style={{opacity: 0.6}}>{s.leaveTeacherName || '未填'}</span> <span style={{margin:'0 4px', opacity:0.3}}>→</span> 
+                            <span style={{color: s.status === 'unassigned' ? 'var(--text-muted)' : 'var(--primary-400)'}}>
+                              {s.status === 'unassigned' ? '尚未指派' : getTeacherName(s.teacherId)}
+                            </span>
                           </span>
                         </div>
                         <div className="compact-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
@@ -198,6 +216,14 @@ export default function Calendar() {
                       </div>
 
                       <div className="compact-actions" style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginLeft: '12px' }}>
+                        {s.status === 'unassigned' && (
+                          <button
+                            className="btn-icon"
+                            style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', width: '100%' }}
+                            onClick={() => handleEdit(s)}
+                            title="指派代課老師"
+                          >🔎</button>
+                        )}
                         {s.status === 'pending' && (
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button
@@ -251,7 +277,8 @@ export default function Calendar() {
         <ScheduleModal
           date={selectedDate}
           teachers={teachers}
-          onSave={handleAddSchedule}
+          editSchedule={editingSchedule}
+          onSave={handleSaveSchedule}
           onClose={() => setShowModal(false)}
         />
       )}

@@ -15,16 +15,18 @@ const SCHEDULE_SUBJECTS = [
 
 const PERIOD_LABELS = ['導師時間', '第一節', '第二節', '第三節', '第四節', '午休', '第五節', '第六節', '第七節'];
 
-export default function ScheduleModal({ date, teachers, onSave, onClose }) {
-  const [step, setStep] = useState(1);
+export default function ScheduleModal({ date, teachers, editSchedule, onSave, onClose }) {
+  const [step, setStep] = useState(editSchedule ? 2 : 1);
   const [form, setForm] = useState({
-    leaveTeacherName: '',   // 請假老師（手動輸入）
-    subject: '',             // 代課科目
-    periodType: '',          // single | halfday | fullday
-    selectedPeriods: [],     // 所有模式共用：選擇的節次
-    className: '',           // 班級
-    note: ''
+    leaveTeacherName: editSchedule?.leaveTeacherName || '',   // 請假老師
+    subject: editSchedule?.subject || '',             // 代課科目
+    periodType: editSchedule?.periodType || '',          // single | halfday | fullday
+    selectedPeriods: editSchedule?.classPeriods || [],     // 所有模式共用：選擇的節次
+    className: editSchedule?.className || '',           // 班級
+    note: editSchedule?.note || ''
   });
+  
+  const activeDate = editSchedule?.date || date;
 
   const handleChange = (field, value) => {
     setForm(prev => {
@@ -78,8 +80,7 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
     setStep(2);
   };
 
-  const handleSelectTeacherAndSave = (selectedTeacherId) => {
-    // 組合 period 資訊
+  const constructScheduleData = (teacherId, status) => {
     const periodsText = form.selectedPeriods.map(p => PERIOD_LABELS[p - 1]).join('、');
     let periodDisplay = '';
     if (form.periodType === 'single') {
@@ -90,9 +91,10 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
       periodDisplay = `整天（${periodsText}）`;
     }
 
-    onSave({
+    return {
+      ...(editSchedule?.id && { id: editSchedule.id }),
       leaveTeacherName: form.leaveTeacherName.trim(),
-      teacherId: selectedTeacherId,
+      teacherId,
       subject: form.subject,
       periodType: form.periodType,
       period: form.periodType,
@@ -100,15 +102,27 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
       periodDisplay,
       className: form.className,
       note: form.note,
-      date,
-      status: 'pending'
-    });
+      date: activeDate,
+      status
+    };
+  };
+
+  const handleSaveEmpty = () => {
+    if (!form.leaveTeacherName.trim()) return alert('請填寫請假老師姓名');
+    if (!form.periodType) return alert('請選擇節次類型');
+    if (form.selectedPeriods.length === 0) return alert('請選擇節次');
+
+    onSave(constructScheduleData('', 'unassigned'));
+  };
+
+  const handleSelectTeacherAndSave = (selectedTeacherId) => {
+    onSave(constructScheduleData(selectedTeacherId, 'pending'));
   };
 
   // 取空閒老師與分類
   const recommendedTeachers = useMemo(() => {
     if (step !== 2) return { high: [], medium: [], other: [] };
-    const available = getAvailableTeachersForPeriods(date, form.selectedPeriods);
+    const available = getAvailableTeachersForPeriods(activeDate, form.selectedPeriods);
     
     // 如果沒有選 form.subject (整天/半天沒選)
     if (!form.subject) {
@@ -132,7 +146,7 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
     });
 
     return { high, medium, other };
-  }, [step, date, form.selectedPeriods, form.subject]);
+  }, [step, activeDate, form.selectedPeriods, form.subject]);
 
   const renderTeacherItem = (teacher, reason) => {
     const initial = teacher.name.charAt(0);
@@ -169,7 +183,7 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
 
         <div className="modal-body">
           <div className="schedule-date-badge">
-            📅 {formatDateChinese(date)}
+            📅 {formatDateChinese(activeDate)}
           </div>
 
           {step === 1 && (
@@ -327,9 +341,14 @@ export default function ScheduleModal({ date, teachers, onSave, onClose }) {
 
               <div className="modal-footer" style={{ padding: 0 }}>
                 <button type="button" className="btn btn-secondary" onClick={onClose}>取消</button>
-                <button type="button" className="btn btn-primary" onClick={handleNext}>
-                  下一步：搜尋推薦老師 🔎
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={handleSaveEmpty}>
+                    儲存缺額 (暫找無人)
+                  </button>
+                  <button type="button" className="btn btn-primary" onClick={handleNext}>
+                    下一步：尋找代課 🔎
+                  </button>
+                </div>
               </div>
             </div>
           )}
