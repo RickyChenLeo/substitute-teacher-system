@@ -110,7 +110,15 @@ export default function Calendar() {
   };
 
   const handleRefresh = () => {
-    window.location.reload();
+    // 除了重新整理頁面，也強制重新啟動 Firebase 監聽器
+    try {
+      if (typeof initializeFirebaseSync === 'function') {
+        initializeFirebaseSync();
+      }
+      window.location.reload();
+    } catch (e) {
+      window.location.reload();
+    }
   };
 
   const selectedSchedules = selectedDate ? getSchedulesForDate(selectedDate) : [];

@@ -14,19 +14,24 @@ const scheduleListeners = new Set();
 // 初始化 Firebase 同步
 // ========================
 export function initializeFirebaseSync() {
+  // 記錄上一個監聽器，確保不重複啟動
+  if (window._sUnsub) window._sUnsub();
+  if (window._tUnsub) window._tUnsub();
+
   const tUnsub = onSnapshot(collection(db, 'teachers'), snapshot => {
-    // 確保產生全新的陣列與物件參照，強迫 React 重新渲染
     memoryTeachers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    const freshTeachers = [...memoryTeachers];
-    teacherListeners.forEach(cb => cb(freshTeachers));
-  });
+    teacherListeners.forEach(cb => cb([...memoryTeachers]));
+  }, err => console.error('Teacher Sync Error:', err));
   
   const sUnsub = onSnapshot(collection(db, 'schedules'), snapshot => {
+    // 每次更新都重新對應新的物件，確保 React 參照變更
     memorySchedules = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    const freshSchedules = [...memorySchedules];
-    scheduleListeners.forEach(cb => cb(freshSchedules));
-  });
+    scheduleListeners.forEach(cb => cb([...memorySchedules]));
+  }, err => console.error('Schedule Sync Error:', err));
   
+  window._tUnsub = tUnsub;
+  window._sUnsub = sUnsub;
+
   return () => {
     tUnsub();
     sUnsub();
