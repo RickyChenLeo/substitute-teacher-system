@@ -85,19 +85,25 @@ export default function Calendar() {
   };
 
   const handleDeleteSchedule = async (id) => {
+    if (!id) return alert('錯誤：找不到排程 ID');
     if (!window.confirm('確定要刪除此排程嗎？')) return;
     try {
       await deleteSchedule(id);
+      alert('刪除成功！');
     } catch (error) {
       console.error('Delete failed:', error);
+      alert('刪除失敗：' + error.message);
     }
   };
 
   const handleStatusChange = async (id, status) => {
+    if (!id) return alert('錯誤：找不到排程 ID');
     try {
       await updateSchedule(id, { status });
+      alert('狀態已更新為：' + (STATUS_MAP[status]?.label || status));
     } catch (error) {
       console.error('Status change failed:', error);
+      alert('更新失敗：' + error.message);
     }
   };
 

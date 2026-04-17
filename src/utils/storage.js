@@ -128,11 +128,25 @@ export async function addSchedule(schedule) {
 }
 
 export async function updateSchedule(id, updates) {
-  await updateDoc(doc(db, 'schedules', id), updates);
+  if (!id) throw new Error('Update failed: Missing schedule ID');
+  try {
+    console.log('Attempting to update schedule:', id, updates);
+    await updateDoc(doc(db, 'schedules', id), updates);
+  } catch (err) {
+    console.error('Firebase Update Error:', err);
+    throw err;
+  }
 }
 
 export async function deleteSchedule(id) {
-  await deleteDoc(doc(db, 'schedules', id));
+  if (!id) throw new Error('Delete failed: Missing schedule ID');
+  try {
+    console.log('Attempting to delete schedule:', id);
+    await deleteDoc(doc(db, 'schedules', id));
+  } catch (err) {
+    console.error('Firebase Delete Error:', err);
+    throw err;
+  }
 }
 
 export async function saveSchedules(schedulesArr) {
