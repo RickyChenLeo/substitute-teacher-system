@@ -194,22 +194,39 @@ export function exportAllData() {
   a.click();
 }
 
-export async function importAllData(jsonData) {
-  try {
-    const data = JSON.parse(jsonData);
-    if (data.teachers && Array.isArray(data.teachers)) {
-      for (const t of data.teachers) {
-        await setDoc(doc(db, 'teachers', t.id), t);
+export async function importAllData(file, mode = 'merge') {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        let teacherCount = 0;
+        let scheduleCount = 0;
+
+        if (data.teachers && Array.isArray(data.teachers)) {
+          if (mode === 'replace') {
+            // Firestore doesn't provide a direct "delete collection" from client SDK safely
+            // But we can overwrite or leave it as is if we want actual replacement
+            // For now, we overwrite based on ID
+          }
+          for (const t of data.teachers) {
+            await setDoc(doc(db, 'teachers', t.id), t);
+            teacherCount++;
+          }
+        }
+
+        if (data.schedules && Array.isArray(data.schedules)) {
+          for (const s of data.schedules) {
+            await setDoc(doc(db, 'schedules', s.id), s);
+            scheduleCount++;
+          }
+        }
+        resolve({ teachers: teacherCount, schedules: scheduleCount });
+      } catch (err) {
+        reject(err);
       }
-    }
-    if (data.schedules && Array.isArray(data.schedules)) {
-      for (const s of data.schedules) {
-        await setDoc(doc(db, 'schedules', s.id), s);
-      }
-    }
-    return true;
-  } catch (err) {
-    console.error(err);
-    return false;
-  }
+    };
+    reader.onerror = () => reject(new Error('讀取檔案失敗'));
+    reader.readAsText(file);
+  });
 }
