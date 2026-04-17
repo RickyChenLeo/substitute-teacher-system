@@ -194,8 +194,7 @@ export default function Calendar() {
                 <p className="empty-desc">點擊行事曆上的日期來查看或新增排程</p>
               </div>
             ) : selectedSchedules.length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>
-            <div className="empty-state" style={{ padding: '64px 24px' }}>
+              <div className="empty-state" style={{ padding: '64px 24px' }}>
                 <p className="empty-desc">此日無排程安排，所有老師皆為空閒</p>
               </div>
             ) : (
