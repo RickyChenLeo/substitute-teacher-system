@@ -194,7 +194,7 @@ export function exportAllData() {
   a.click();
 }
 
-export async function importData(jsonData) {
+export async function importAllData(jsonData) {
   try {
     const data = JSON.parse(jsonData);
     if (data.teachers && Array.isArray(data.teachers)) {
