@@ -87,6 +87,24 @@ export default function Calendar() {
 
   const selectedSchedules = selectedDate ? getSchedulesForDate(selectedDate) : [];
 
+  const groupedSchedules = useMemo(() => {
+    const groups = {};
+    selectedSchedules.forEach(s => {
+      const key = `${s.leaveTeacherName}-${s.teacherId}`;
+      if (!groups[key]) {
+        groups[key] = {
+          id: key,
+          leaveTeacherName: s.leaveTeacherName,
+          teacherId: s.teacherId,
+          status: s.status, // 以第一筆狀態為主，通常同一位老師同天假會是一樣的
+          items: []
+        };
+      }
+      groups[key].items.push(s);
+    });
+    return Object.values(groups);
+  }, [selectedSchedules]);
+
   // 節次類型 badge
   const getPeriodTypeBadge = (s) => {
     if (s.periodType === 'fullday') return { label: '整天', cls: 'badge-fullday' };
@@ -182,79 +200,80 @@ export default function Calendar() {
               </div>
             ) : (
               <div className="schedule-list">
-                {selectedSchedules.map(s => {
-                  const periodBadge = getPeriodTypeBadge(s);
-                  return (
-                    <div key={s.id} className="schedule-item-compact">
-                      <div className="compact-main" style={{ flex: 1 }}>
-                        <div className="compact-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <span className={`compact-status ${s.status}`} style={{
-                            background: STATUS_MAP[s.status]?.bg,
-                            color: STATUS_MAP[s.status]?.color,
-                            padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'
-                          }}>
-                            {STATUS_MAP[s.status]?.label}
-                          </span>
-                          <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                            <span style={{opacity: 0.6}}>{s.leaveTeacherName || '未填'}</span> <span style={{margin:'0 4px', opacity:0.3}}>→</span> 
-                            <span style={{color: s.status === 'unassigned' ? 'var(--text-muted)' : 'var(--primary-400)'}}>
-                              {s.status === 'unassigned' ? '尚未指派' : getTeacherName(s.teacherId)}
-                            </span>
-                          </span>
-                        </div>
-                        <div className="compact-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                          {s.subject && <span>{s.subject}</span>}
-                          {s.subject && <span style={{opacity: 0.3}}>|</span>}
-                          <span>{periodBadge.label} ({(s.classPeriods || []).map(p => `第${p}節`).join(', ')})</span>
-                          {s.className && (
-                            <>
-                              <span style={{opacity: 0.3}}>|</span>
-                              <span>{s.className}</span>
-                            </>
-                          )}
-                        </div>
-                        {s.note && (
-                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px', background: 'var(--bg-glass)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
-                            {s.note}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="compact-actions" style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginLeft: '12px' }}>
-                        {s.status === 'unassigned' && (
-                          <button
-                            className="btn-icon"
-                            style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', width: '100%' }}
-                            onClick={() => handleEdit(s)}
-                            title="指派代課老師"
-                          >🔎</button>
-                        )}
-                        {s.status === 'pending' && (
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <button
-                              className="btn-icon"
-                              style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}
-                              onClick={() => handleStatusChange(s.id, 'confirmed')}
-                              title="確認"
-                            >✅</button>
-                            <button
-                              className="btn-icon"
-                              style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}
-                              onClick={() => handleStatusChange(s.id, 'rejected')}
-                              title="拒絕"
-                            >❌</button>
-                          </div>
-                        )}
-                        <button
-                          className="btn-icon"
-                          style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)', width: s.status !== 'pending' ? '100%' : undefined }}
-                          onClick={() => handleDeleteSchedule(s.id)}
-                          title="刪除"
-                        >🗑️</button>
-                      </div>
+                {groupedSchedules.map(group => (
+                  <div key={group.id} className="schedule-item-compact" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                    {/* Header: Teachers & Status */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid var(--border-subtle)' }}>
+                      <span className={`compact-status ${group.status}`} style={{
+                        background: STATUS_MAP[group.status]?.bg,
+                        color: STATUS_MAP[group.status]?.color,
+                        padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'
+                      }}>
+                        {STATUS_MAP[group.status]?.label}
+                      </span>
+                      <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                        <span style={{opacity: 0.6}}>{group.leaveTeacherName || '未填'}</span> 
+                        <span style={{margin:'0 6px', opacity:0.3}}>→</span> 
+                        <span style={{color: group.status === 'unassigned' ? 'var(--text-muted)' : 'var(--primary-400)'}}>
+                          {group.status === 'unassigned' ? '尚未指派' : getTeacherName(group.teacherId)}
+                        </span>
+                      </span>
                     </div>
-                  );
-                })}
+
+                    {/* Sub-items List */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {group.items.map(s => {
+                        const periodBadge = getPeriodTypeBadge(s);
+                        return (
+                          <div key={s.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                            <div style={{ flex: 1 }}>
+                              <div className="compact-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{s.subject || '無科目'}</span>
+                                <span style={{ opacity: 0.3 }}>|</span>
+                                <span>{periodBadge.label} ({(s.classPeriods || []).map(p => `第${p}節`).join(', ')})</span>
+                                {s.className && (
+                                  <>
+                                    <span style={{ opacity: 0.3 }}>|</span>
+                                    <span>{s.className}</span>
+                                  </>
+                                )}
+                              </div>
+                              {s.note && (
+                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', fontStyle: 'italic' }}>
+                                  {s.note}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              {s.status === 'unassigned' && (
+                                <button className="btn-icon" onClick={() => handleEdit(s)} title="分配老師" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+                                  🔎
+                                </button>
+                              )}
+                              {s.status === 'pending' && (
+                                <>
+                                  <button className="btn-icon" onClick={() => handleStatusChange(s.id, 'confirmed')} title="確認" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>
+                                    ✅
+                                  </button>
+                                  <button className="btn-icon" onClick={() => handleStatusChange(s.id, 'rejected')} title="拒絕" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
+                                    ❌
+                                  </button>
+                                </>
+                              )}
+                              <button className="btn-icon" onClick={() => handleEdit(s)} title="編輯" style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)', fontSize: '12px' }}>
+                                ✏️
+                              </button>
+                              <button className="btn-icon" onClick={() => handleDeleteSchedule(s.id)} title="刪除" style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)', fontSize: '12px' }}>
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
