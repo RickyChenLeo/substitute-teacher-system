@@ -3,10 +3,10 @@ import { exportAllData, importAllData } from '../utils/storage';
 
 const NAV_ITEMS = [
   { id: 'dashboard', icon: '📊', label: '儀表板' },
+  { id: 'calendar', icon: '📅', label: '排程行事曆' },
   { id: 'teachers', icon: '👥', label: '老師管理' },
   { id: 'add-teacher', icon: '➕', label: '登記老師' },
   { id: 'batch-import', icon: '📥', label: '批量匯入' },
-  { id: 'calendar', icon: '📅', label: '排程行事曆' },
   { id: 'available', icon: '🔍', label: '查詢空閒' },
 ];
 
