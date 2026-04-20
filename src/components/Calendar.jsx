@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { useSchedules, useTeachers, addSchedule, deleteSchedule, updateSchedule } from '../utils/storage';
 import { getMonthDays, formatDate, formatDateChinese, getTodayStr, STATUS_MAP, PERIOD_LABELS } from '../utils/helpers';
 import ScheduleModal from './ScheduleModal';
