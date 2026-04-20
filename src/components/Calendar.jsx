@@ -169,9 +169,19 @@ export default function Calendar() {
                     onClick={() => { setSelectedDate(dateStr); handleDayClick(dateStr); }}
                   >
                     {slotItems.map(s => (
-                      <div key={s.id} className={`week-slot-item ${s.status}`} onClick={() => handleEdit(s)}>
-                        <span className="week-teacher-name">{getTeacherName(s.teacherId)}</span>
-                        <span style={{opacity: 0.7, fontSize: '10px'}}>{s.leaveTeacherName} (代)</span>
+                      <div key={s.id} className={`week-slot-item ${s.status}`} style={{ position: 'relative' }}>
+                        <div onClick={() => handleEdit(s)}>
+                          <span className="week-teacher-name">{getTeacherName(s.teacherId)}</span>
+                          <span style={{opacity: 0.7, fontSize: '10px'}}>{s.leaveTeacherName} (代)</span>
+                        </div>
+                        <button 
+                          className="btn-icon" 
+                          onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s.id); }}
+                          style={{ position: 'absolute', top: '2px', right: '2px', padding: '2px', fontSize: '10px', background: 'rgba(0,0,0,0.2)' }}
+                          title="刪除"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -319,9 +329,9 @@ export default function Calendar() {
                        {group.items.map(s => (
                          <div key={s.id} style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                            <span>{getPeriodTypeBadge(s).label} ({s.classPeriods.map(p => PERIOD_LABELS[p-1]).join(',')})</span>
-                           <div style={{ display: 'flex', gap: '6px' }}>
-                             <button className="link-btn" onClick={() => handleEdit(s)}>編</button>
-                             <button className="link-btn" onClick={() => handleDeleteSchedule(s.id)}>刪</button>
+                           <div style={{ display: 'flex', gap: '4px' }}>
+                             <button className="btn-icon" onClick={() => handleEdit(s)} title="編輯">✏️</button>
+                             <button className="btn-icon" onClick={() => handleDeleteSchedule(s.id)} title="刪除">🗑️</button>
                            </div>
                          </div>
                        ))}
