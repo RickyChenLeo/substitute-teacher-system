@@ -2000,3 +2000,59 @@ body {
   from { transform: translateY(-10px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* ====== Subject Grid selection ====== */
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.subject-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 4px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+  min-height: 80px;
+}
+
+.subject-tile:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--primary-400);
+  transform: translateY(-2px);
+}
+
+.subject-tile.active {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: var(--primary-500);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+}
+
+.subject-tile-icon {
+  font-size: 24px;
+}
+
+.subject-tile-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.subject-tile.active .subject-tile-name {
+  color: var(--text-primary);
+}
+
+@media (max-width: 480px) {
+  .subject-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

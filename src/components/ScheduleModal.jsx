@@ -361,14 +361,15 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                 <label className="form-label">
                   代課科目 (選填)
                 </label>
-                <div className="radio-group" style={{ flexWrap: 'wrap' }}>
+                <div className="subject-grid">
                   {SCHEDULE_SUBJECTS.map(s => (
                     <div
                       key={s.id}
-                      className={`radio-label ${form.subject === s.name ? 'active' : ''}`}
+                      className={`subject-tile ${form.subject === s.name ? 'active' : ''}`}
                       onClick={() => handleChange('subject', s.name)}
                     >
-                      {s.icon} {s.name}
+                      <span className="subject-tile-icon">{s.icon}</span>
+                      <span className="subject-tile-name">{s.name}</span>
                     </div>
                   ))}
                 </div>
