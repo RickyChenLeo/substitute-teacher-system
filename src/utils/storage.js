@@ -20,14 +20,15 @@ export function initializeFirebaseSync() {
   const tUnsub = onSnapshot(collection(db, 'teachers'), snapshot => {
     // 使用 Map 去重，防止 ID 重複產生幻影
     const uniqueMap = new Map();
-    snapshot.docs.forEach(d => uniqueMap.set(d.id, { id: d.id, ...d.data() }));
+    // 必須把 id 放在最後解構，確保能蓋過資料庫內可能殘留的 id
+    snapshot.docs.forEach(d => uniqueMap.set(d.id, { ...d.data(), id: d.id }));
     memoryTeachers = Array.from(uniqueMap.values());
     teacherListeners.forEach(cb => cb([...memoryTeachers]));
   }, err => console.error('Teacher Sync Error:', err));
   
   const sUnsub = onSnapshot(collection(db, 'schedules'), snapshot => {
     const uniqueMap = new Map();
-    snapshot.docs.forEach(d => uniqueMap.set(d.id, { id: d.id, ...d.data() }));
+    snapshot.docs.forEach(d => uniqueMap.set(d.id, { ...d.data(), id: d.id }));
     memorySchedules = Array.from(uniqueMap.values());
     scheduleListeners.forEach(cb => cb([...memorySchedules]));
   }, err => console.error('Schedule Sync Error:', err));
@@ -135,6 +136,7 @@ export async function addSchedule(schedule) {
     status: schedule.status || 'pending',
     createdAt: new Date().toISOString()
   };
+  delete newSchedule.id; // 不要把 id 存進 document value 中
   await addDoc(collection(db, 'schedules'), newSchedule);
 }
 
@@ -162,10 +164,12 @@ export async function deleteSchedule(id) {
 
 export async function saveSchedules(schedulesArr) {
     for (const s of schedulesArr) {
+        const scheduleData = { ...s };
+        delete scheduleData.id;
         if (s.id) {
-            await setDoc(doc(db, 'schedules', s.id), s);
+            await setDoc(doc(db, 'schedules', s.id), scheduleData);
         } else {
-            await addDoc(collection(db, 'schedules'), s);
+            await addDoc(collection(db, 'schedules'), scheduleData);
         }
     }
 }

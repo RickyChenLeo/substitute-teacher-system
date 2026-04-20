@@ -83,54 +83,40 @@ export default function Calendar() {
       setShowModal(false);
     } catch (error) {
       console.error('Save failed:', error);
-      if (error.message.includes('No document to update')) {
-        alert('偵測到數據同步異常（幻影數據），系統將自動清除該筆錯誤資料。');
-        handleRefresh();
-      } else {
-        alert('儲存失敗，請檢查網路連線');
-      }
+      alert('儲存失敗，請檢查網路連線或重新整理頁面');
     }
   };
 
   const handleDeleteSchedule = async (id) => {
     if (!id) return alert('錯誤：找不到排程 ID');
-    const idSuffix = id.slice(-5);
-    if (!window.confirm(`確定要刪除此排程嗎？\n(ID尾碼: ${idSuffix})`)) return;
+    if (!window.confirm(`確定要刪除此排程嗎？`)) return;
     try {
       await deleteSchedule(id);
-      alert(`刪除成功！(ID: ${idSuffix})`);
+      // UI會自動透過 onSnapshot 同步更新，不跳 alert 打擾
     } catch (error) {
       console.error('Delete failed:', error);
-      alert(`刪除失敗 [${idSuffix}]：` + error.message);
+      alert(`刪除失敗：` + error.message);
     }
   };
 
   const handleStatusChange = async (id, status) => {
     if (!id) return alert('錯誤：找不到排程 ID');
-    const idSuffix = id.slice(-5);
     try {
       await updateSchedule(id, { status });
-      alert(`狀態已更新 [${idSuffix}]：` + (STATUS_MAP[status]?.label || status));
+      // UI會透過 onSnapshot 同步更新
     } catch (error) {
       console.error('Status change failed:', error);
-      if (error.message.includes('No document to update')) {
-        alert(`偵測到幻影資料 [${idSuffix}]，該筆記錄已從資料庫移除，畫面將進行同步。`);
-        handleRefresh();
-      } else {
-        alert(`更新失敗 [${idSuffix}]：` + error.message);
-      }
+      alert(`狀態更新失敗：` + error.message);
     }
   };
 
   const handleRefresh = () => {
-    // 除了重新整理頁面，也強制重新啟動 Firebase 監聽器
     try {
       if (typeof initializeFirebaseSync === 'function') {
         initializeFirebaseSync();
       }
-      window.location.reload();
     } catch (e) {
-      window.location.reload();
+      console.error('Refresh Sync Error:', e);
     }
   };
 
