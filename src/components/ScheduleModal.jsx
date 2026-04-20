@@ -15,7 +15,7 @@ const SCHEDULE_SUBJECTS = [
 
 
 export default function ScheduleModal({ date, teachers, editSchedule, onSave, onClose }) {
-  const [step, setStep] = useState(editSchedule ? 2 : 1);
+  const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [form, setForm] = useState({
     leaveTeacherName: editSchedule?.leaveTeacherName || '',   // 請假老師
@@ -160,6 +160,13 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
 
   const handleSelectTeacherAndSave = (selectedTeacherId) => {
     onSave(constructScheduleData(selectedTeacherId, 'pending'));
+  };
+
+  const handleUpdateDirectly = () => {
+    const error = validateForm();
+    if (error) return alert(error);
+    // 保留原本的老師與狀態
+    onSave(constructScheduleData(editSchedule?.teacherId || '', editSchedule?.status || 'unassigned'));
   };
 
   const searchSubject = form.periodType === 'single' 
@@ -430,8 +437,13 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                   <button type="button" className="btn btn-secondary" onClick={handleSaveEmpty}>
                     儲存缺額 (暫找無人)
                   </button>
+                  {editSchedule && (
+                    <button type="button" className="btn btn-primary" style={{ background: 'var(--success)' }} onClick={handleUpdateDirectly}>
+                      直接儲存修改
+                    </button>
+                  )}
                   <button type="button" className="btn btn-primary" onClick={handleNext}>
-                    下一步：尋找代課
+                    {editSchedule ? '下一步：更換代課' : '下一步：尋找代課'}
                   </button>
                 </div>
               </div>
