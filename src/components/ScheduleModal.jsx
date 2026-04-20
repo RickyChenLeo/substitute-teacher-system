@@ -96,11 +96,9 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
     if (form.selectedPeriods.length === 0) return '請選擇節次';
     
     if (form.periodType === 'single') {
-      for (let p of form.selectedPeriods) {
-        if (!periodDetails[p]?.subject) return `請選擇第${PERIOD_LABELS[p-1]}的代課科目`;
-      }
+      // 不再檢查各節科目，改為選填
     } else {
-      if (!form.subject && form.periodType === 'single') return '請選擇代課科目'; // Fallback
+      // 半天或整天的全域科目也改為選填
     }
     return null;
   };
@@ -355,7 +353,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
             {form.periodType !== 'single' && (
               <div className="form-group">
                 <label className="form-label">
-                  代課科目 {form.periodType === 'single' ? '*' : '(選填)'}
+                  代課科目 (選填)
                 </label>
                 <div className="radio-group" style={{ flexWrap: 'wrap' }}>
                   {SCHEDULE_SUBJECTS.map(s => (
@@ -387,7 +385,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
             {/* 一節一單模式的逐節設定區塊 */}
             {form.periodType === 'single' && form.selectedPeriods.length > 0 && (
               <div className="form-group" style={{ background: 'var(--bg-glass)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-                <label className="form-label" style={{ marginBottom: '12px' }}>各節次科目與班級對應 *</label>
+                <label className="form-label" style={{ marginBottom: '12px' }}>各節次科目與班級對應 (選填)</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {form.selectedPeriods.map(p => (
                     <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
