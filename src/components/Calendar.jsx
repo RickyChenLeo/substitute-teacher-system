@@ -117,7 +117,7 @@ export default function Calendar() {
                 <div className="calendar-item-tags">
                   {daySchedules.slice(0, 4).map(s => (
                     <div key={s.id} className={`calendar-tag-item ${s.status}`}>
-                      {PERIOD_LABELS[s.classPeriods[0] - 1]?.slice(0, 1)} {getTeacherName(s.teacherId).slice(0, 2)}
+                      {PERIOD_LABELS[s.classPeriods[0] - 1]} {getTeacherName(s.teacherId)}
                     </div>
                   ))}
                   {daySchedules.length > 4 && <div className="calendar-tag-item" style={{opacity:0.6}}>+{daySchedules.length - 4}...</div>}
