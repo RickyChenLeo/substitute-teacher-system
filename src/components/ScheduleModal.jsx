@@ -92,13 +92,10 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
   const validateForm = () => {
     if (!form.leaveTeacherName.trim()) return '請填寫請假老師姓名';
     if (!form.periodType) return '請選擇節次類型';
-    if (form.selectedPeriods.length === 0) return '請選擇節次';
     
-    if (form.periodType === 'single') {
-      // 不再檢查各節科目，改為選填
-    } else {
-      // 半天或整天的全域科目也改為選填
-    }
+    // 如果是單節模式，還是建議至少選一個，但為了符合使用者「不必選」的需求，這裡也放寬
+    // if (form.selectedPeriods.length === 0) return '請選擇節次';
+    
     return null;
   };
 
