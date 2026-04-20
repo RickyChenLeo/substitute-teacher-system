@@ -11,6 +11,7 @@ export default function Calendar() {
   const [viewMode, setViewMode] = useState('month'); // 'month' | 'week' | 'day'
   const [baseDate, setBaseDate] = useState(today); // 當前檢視的核心日期
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
+  const [selectedIds, setSelectedIds] = useState([]); // 被選取的排程 ID
   const [showModal, setShowModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   
@@ -25,6 +26,7 @@ export default function Calendar() {
     else if (viewMode === 'week') next.setDate(baseDate.getDate() - 7);
     else next.setDate(baseDate.getDate() - 1);
     setBaseDate(next);
+    setSelectedIds([]); // 切換時清空選取
   };
 
   const goToNext = () => {
@@ -33,11 +35,57 @@ export default function Calendar() {
     else if (viewMode === 'week') next.setDate(baseDate.getDate() + 7);
     else next.setDate(baseDate.getDate() + 1);
     setBaseDate(next);
+    setSelectedIds([]); // 切換時清空選取
   };
 
   const goToToday = () => {
     setBaseDate(today);
     setSelectedDate(todayStr);
+    setSelectedIds([]);
+  };
+
+  // 勾選邏輯
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectGroup = (items) => {
+    const itemIds = items.map(s => s.id);
+    const allSelected = itemIds.every(id => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds(prev => prev.filter(id => !itemIds.includes(id)));
+    } else {
+      setSelectedIds(prev => [...new Set([...prev, ...itemIds])]);
+    }
+  };
+
+  // 批次處理
+  const handleBulkStatus = async (status) => {
+    if (selectedIds.length === 0) return;
+    try {
+      for (const id of selectedIds) {
+        await updateSchedule(id, { status });
+      }
+      setSelectedIds([]);
+    } catch (e) {
+      console.error('Bulk update failed:', e);
+      alert('批次更新失敗');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0 || !window.confirm(`確定要刪除這 ${selectedIds.length} 筆排程嗎？`)) return;
+    try {
+      for (const id of selectedIds) {
+        await deleteSchedule(id);
+      }
+      setSelectedIds([]);
+    } catch (e) {
+      console.error('Bulk delete failed:', e);
+      alert('批次刪除失敗');
+    }
   };
 
   const getSchedulesForDate = (dateStr) => {
@@ -87,6 +135,21 @@ export default function Calendar() {
 
   const handleRefresh = () => {
     if (typeof initializeFirebaseSync === 'function') initializeFirebaseSync();
+  };
+
+  const getPeriodTypeBadge = (s) => {
+    if (s.periodType === 'fullday') return { label: '整天', cls: 'badge-fullday' };
+    if (s.periodType === 'halfday') return { label: '半天', cls: 'badge-halfday' };
+    return { label: '單節', cls: 'badge-single' };
+  };
+
+  const handleDayClick = (dStr) => {
+    setSelectedDate(dStr);
+  };
+
+  const handleAddNew = () => {
+    setEditingSchedule(null);
+    setShowModal(true);
   };
 
   // 月檢視渲染
@@ -258,7 +321,7 @@ export default function Calendar() {
     );
   }
 
-  // 右側麵板 (保留現有 Side Panel 功能但在週/日檢視下視情況縮減)
+  // 右側麵板
   const selectedSchedules = getSchedulesForDate(selectedDate);
   const groupedSchedules = useMemo(() => {
     const groups = {};
@@ -269,21 +332,6 @@ export default function Calendar() {
     });
     return Object.values(groups);
   }, [selectedSchedules]);
-
-  const handleDayClick = (dStr) => {
-    setSelectedDate(dStr);
-  };
-
-  const handleAddNew = () => {
-    setEditingSchedule(null);
-    setShowModal(true);
-  };
-
-  const getPeriodTypeBadge = (s) => {
-    if (s.periodType === 'fullday') return { label: '整天', cls: 'badge-fullday' };
-    if (s.periodType === 'halfday') return { label: '半天', cls: 'badge-halfday' };
-    return { label: '單節', cls: 'badge-single' };
-  };
 
   return (
     <div className="calendar-page animate-in">
@@ -324,9 +372,22 @@ export default function Calendar() {
           {viewMode === 'day' && renderDayView()}
         </div>
 
-        {/* 只有月檢視顯示側邊欄，週/日檢視已在網格中包含足夠資訊 */}
+        {/* 只有月檢視顯示側邊欄 */}
         {viewMode === 'month' && (
           <div className="calendar-sidebar">
+            {/* 批次操作工具列 */}
+            {selectedIds.length > 0 && (
+              <div className="bulk-actions-bar">
+                <span className="bulk-count">已選擇 {selectedIds.length} 筆</span>
+                <div className="bulk-btns">
+                  <button className="btn-icon" onClick={() => handleBulkStatus('confirmed')} title="全部確認" style={{background:'#fff', color:'var(--success)'}}>✅</button>
+                  <button className="btn-icon" onClick={() => handleBulkStatus('rejected')} title="全部拒絕" style={{background:'#fff', color:'var(--danger)'}}>❌</button>
+                  <button className="btn-icon" onClick={handleBulkDelete} title="全部刪除" style={{background:'#fff', color:'var(--text-muted)'}}>🗑️</button>
+                  <button className="btn-icon" onClick={() => setSelectedIds([])} title="取消選擇" style={{background:'transparent', color:'#fff', border:'1px solid #fff'}}>✕</button>
+                </div>
+              </div>
+            )}
+
             <div className="card">
               <div className="card-header">
                 <h2 className="card-title">{formatDateChinese(selectedDate)} 的排程</h2>
@@ -341,32 +402,35 @@ export default function Calendar() {
                 <div className="schedule-list">
                   {groupedSchedules.map(group => (
                     <div key={group.id} className="schedule-item-compact">
-                       <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                         <span className={`compact-status ${group.status}`}>{STATUS_MAP[group.status]?.label}</span>
-                         <span style={{fontWeight: 600}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
+                       <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                           <span className={`compact-status ${group.status}`}>{STATUS_MAP[group.status]?.label}</span>
+                           <span style={{fontWeight: 600}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
+                         </div>
+                         <label className="checkbox-group-label" onClick={(e) => { e.preventDefault(); toggleSelectGroup(group.items); }}>
+                           <input 
+                             type="checkbox" 
+                             className="custom-checkbox" 
+                             checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(s.id))}
+                             readOnly
+                           />
+                           全選
+                         </label>
                        </div>
                        {group.items.map(s => (
-                         <div key={s.id} style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                           <span>{getPeriodTypeBadge(s).label} ({s.classPeriods.map(p => PERIOD_LABELS[p-1]).join(',')})</span>
+                         <div key={s.id} style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                           <input 
+                              type="checkbox" 
+                              className="custom-checkbox" 
+                              checked={selectedIds.includes(s.id)}
+                              onChange={() => toggleSelect(s.id)}
+                           />
+                           <span style={{ flex: 1 }}>{getPeriodTypeBadge(s).label} ({s.classPeriods.map(p => PERIOD_LABELS[p-1]).join(',')})</span>
                            <div style={{ display: 'flex', gap: '4px' }}>
                              {s.status === 'pending' && (
                                <>
-                                 <button 
-                                   className="btn-icon" 
-                                   onClick={(e) => { e.stopPropagation(); handleStatusChange(s.id, 'confirmed'); }}
-                                   title="確認"
-                                   style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}
-                                 >
-                                   ✅
-                                 </button>
-                                 <button 
-                                   className="btn-icon" 
-                                   onClick={(e) => { e.stopPropagation(); handleStatusChange(s.id, 'rejected'); }}
-                                   title="拒絕"
-                                   style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}
-                                 >
-                                   ❌
-                                 </button>
+                                 <button className="btn-icon" onClick={() => handleStatusChange(s.id, 'confirmed')} title="確認">✅</button>
+                                 <button className="btn-icon" onClick={() => handleStatusChange(s.id, 'rejected')} title="拒絕">❌</button>
                                </>
                              )}
                              <button className="btn-icon" onClick={() => handleEdit(s)} title="編輯">✏️</button>
