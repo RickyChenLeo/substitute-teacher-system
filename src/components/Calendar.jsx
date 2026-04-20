@@ -1,40 +1,42 @@
 import { useState, useMemo } from 'react';
-import { useSchedules, useTeachers, addSchedule, deleteSchedule, updateSchedule } from '../utils/storage';
-import { getMonthDays, formatDate, formatDateChinese, getTodayStr, STATUS_MAP, PERIOD_LABELS } from '../utils/helpers';
+import { useSchedules, useTeachers, addSchedule, deleteSchedule, updateSchedule, initializeFirebaseSync } from '../utils/storage';
+import { 
+  getMonthDays, getWeekDays, formatDate, formatDateChinese, getTodayStr, 
+  STATUS_MAP, PERIOD_LABELS, isSameDay, getWeekRangeDisplay 
+} from '../utils/helpers';
 import ScheduleModal from './ScheduleModal';
 
 export default function Calendar() {
   const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [viewMode, setViewMode] = useState('month'); // 'month' | 'week' | 'day'
+  const [baseDate, setBaseDate] = useState(today); // 當前檢視的核心日期
+  const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [showModal, setShowModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   
   const schedules = useSchedules();
   const teachers = useTeachers();
-
-  const days = useMemo(() => getMonthDays(year, month), [year, month]);
   const todayStr = getTodayStr();
 
-  const monthNames = [
-    '一月', '二月', '三月', '四月', '五月', '六月',
-    '七月', '八月', '九月', '十月', '十一月', '十二月'
-  ];
-
-  const goToPrevMonth = () => {
-    if (month === 0) { setYear(y => y - 1); setMonth(11); }
-    else setMonth(m => m - 1);
+  // 導覽功能
+  const goToPrev = () => {
+    const next = new Date(baseDate);
+    if (viewMode === 'month') next.setMonth(baseDate.getMonth() - 1);
+    else if (viewMode === 'week') next.setDate(baseDate.getDate() - 7);
+    else next.setDate(baseDate.getDate() - 1);
+    setBaseDate(next);
   };
 
-  const goToNextMonth = () => {
-    if (month === 11) { setYear(y => y + 1); setMonth(0); }
-    else setMonth(m => m + 1);
+  const goToNext = () => {
+    const next = new Date(baseDate);
+    if (viewMode === 'month') next.setMonth(baseDate.getMonth() + 1);
+    else if (viewMode === 'week') next.setDate(baseDate.getDate() + 7);
+    else next.setDate(baseDate.getDate() + 1);
+    setBaseDate(next);
   };
 
   const goToToday = () => {
-    setYear(today.getFullYear());
-    setMonth(today.getMonth());
+    setBaseDate(today);
     setSelectedDate(todayStr);
   };
 
@@ -42,18 +44,9 @@ export default function Calendar() {
     return schedules.filter(s => s.date === dateStr);
   };
 
-  const getTeacherName = (teacherId) => {
-    const t = teachers.find(t => t.id === teacherId);
-    return t ? t.name : '未知';
-  };
-
-  const handleDayClick = (dateStr) => {
-    setSelectedDate(dateStr);
-  };
-
-  const handleAddNew = () => {
-    setEditingSchedule(null);
-    setShowModal(true);
+  const getTeacherName = (tId) => {
+    const found = teachers.find(t => t.id === tId);
+    return found ? found.name : '尚未指派';
   };
 
   const handleEdit = (schedule) => {
@@ -64,15 +57,9 @@ export default function Calendar() {
   const handleSaveSchedule = async (scheduleData) => {
     try {
       if (Array.isArray(scheduleData)) {
-        // 多筆模式：先砍舊的再加新的
-        if (editingSchedule) {
-          await deleteSchedule(editingSchedule.id);
-        }
-        for (const d of scheduleData) {
-          await addSchedule(d);
-        }
+        if (editingSchedule) await deleteSchedule(editingSchedule.id);
+        for (const d of scheduleData) await addSchedule(d);
       } else {
-        // 單筆模式
         if (scheduleData.id || editingSchedule?.id) {
           const targetId = scheduleData.id || editingSchedule?.id;
           await updateSchedule(targetId, scheduleData);
@@ -83,67 +70,186 @@ export default function Calendar() {
       setShowModal(false);
     } catch (error) {
       console.error('Save failed:', error);
-      alert('儲存失敗，請檢查網路連線或重新整理頁面');
+      alert('儲存失敗，請檢查網路連線');
     }
   };
 
   const handleDeleteSchedule = async (id) => {
-    if (!id) return alert('錯誤：找不到排程 ID');
-    if (!window.confirm(`確定要刪除此排程嗎？`)) return;
-    try {
-      await deleteSchedule(id);
-      // UI會自動透過 onSnapshot 同步更新，不跳 alert 打擾
-    } catch (error) {
-      console.error('Delete failed:', error);
-      alert(`刪除失敗：` + error.message);
-    }
+    if (!id || !window.confirm('確定要刪除嗎？')) return;
+    try { await deleteSchedule(id); }
+    catch (error) { alert('刪除失敗'); }
   };
 
   const handleStatusChange = async (id, status) => {
-    if (!id) return alert('錯誤：找不到排程 ID');
-    try {
-      await updateSchedule(id, { status });
-      // UI會透過 onSnapshot 同步更新
-    } catch (error) {
-      console.error('Status change failed:', error);
-      alert(`狀態更新失敗：` + error.message);
-    }
+    try { await updateSchedule(id, { status }); }
+    catch (error) { alert('更新失敗'); }
   };
 
   const handleRefresh = () => {
-    try {
-      if (typeof initializeFirebaseSync === 'function') {
-        initializeFirebaseSync();
-      }
-    } catch (e) {
-      console.error('Refresh Sync Error:', e);
-    }
+    if (typeof initializeFirebaseSync === 'function') initializeFirebaseSync();
   };
 
-  const selectedSchedules = selectedDate ? getSchedulesForDate(selectedDate) : [];
+  // 月檢視渲染
+  function renderMonthView() {
+    const year = baseDate.getFullYear();
+    const month = baseDate.getMonth();
+    const days = getMonthDays(year, month);
+    
+    return (
+      <div className="calendar-grid-container">
+        <div className="calendar-weekdays">
+          {['日', '一', '二', '三', '四', '五', '六'].map(d => <div key={d} className="calendar-weekday">{d}</div>)}
+        </div>
+        <div className="calendar-grid">
+          {days.map((day, idx) => {
+            const dateStr = formatDate(day.date);
+            const daySchedules = getSchedulesForDate(dateStr);
+            const isSelected = dateStr === selectedDate;
+            const isToday = dateStr === todayStr;
 
+            return (
+              <div
+                key={idx}
+                className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
+                onClick={() => setSelectedDate(dateStr)}
+              >
+                <span className="calendar-day-number">{day.date.getDate()}</span>
+                <div className="calendar-item-tags">
+                  {daySchedules.slice(0, 4).map(s => (
+                    <div key={s.id} className={`calendar-tag-item ${s.status}`}>
+                      {PERIOD_LABELS[s.classPeriods[0] - 1]?.slice(0, 1)} {getTeacherName(s.teacherId).slice(0, 2)}
+                    </div>
+                  ))}
+                  {daySchedules.length > 4 && <div className="calendar-tag-item" style={{opacity:0.6}}>+{daySchedules.length - 4}...</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // 週檢視渲染 (7x9 功課表)
+  function renderWeekView() {
+    const weekDays = getWeekDays(baseDate);
+    const periods = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    return (
+      <div className="week-grid-wrapper animate-in">
+        <div className="week-grid">
+          {/* Header Row */}
+          <div className="week-header-cell">節次</div>
+          {weekDays.map(d => {
+            const dateStr = formatDate(d);
+            return (
+              <div 
+                key={dateStr} 
+                className={`week-header-cell ${dateStr === todayStr ? 'today' : ''}`}
+                onClick={() => { setBaseDate(d); setViewMode('day'); setSelectedDate(dateStr); }}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="week-header-date">{d.getDate()}</div>
+                <div className="week-header-label">{['日', '一', '二', '三', '四', '五', '六'][d.getDay()]}</div>
+              </div>
+            );
+          })}
+
+          {/* Time Rows */}
+          {periods.map(p => (
+            <div key={p} style={{ display: 'contents' }}>
+              <div className="week-time-label">{PERIOD_LABELS[p-1]}</div>
+              {weekDays.map(d => {
+                const dateStr = formatDate(d);
+                const slotItems = getSchedulesForDate(dateStr).filter(s => s.classPeriods.includes(p));
+                return (
+                  <div 
+                    key={`${dateStr}-${p}`} 
+                    className={`week-slot ${dateStr === todayStr ? 'today' : ''}`}
+                    onClick={() => { setSelectedDate(dateStr); handleDayClick(dateStr); }}
+                  >
+                    {slotItems.map(s => (
+                      <div key={s.id} className={`week-slot-item ${s.status}`} onClick={() => handleEdit(s)}>
+                        <span className="week-teacher-name">{getTeacherName(s.teacherId)}</span>
+                        <span style={{opacity: 0.7, fontSize: '10px'}}>{s.leaveTeacherName} (代)</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </useMemo>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 日檢視渲染
+  function renderDayView() {
+    const dateStr = formatDate(baseDate);
+    const daySchedules = getSchedulesForDate(dateStr);
+    const periods = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    return (
+      <div className="day-view-container animate-in">
+        <div className="day-timeline">
+          {periods.map(p => {
+            const slotItems = daySchedules.filter(s => s.classPeriods.includes(p));
+            return (
+              <div key={p} className="day-period-card">
+                <div className="day-period-label">{PERIOD_LABELS[p-1]}</div>
+                <div className="day-period-content">
+                  {slotItems.length === 0 ? (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>尚無排程</div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {slotItems.map(s => (
+                        <div key={s.id} className="schedule-item-compact" style={{ minWidth: '200px', flex: 1 }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                             <span style={{fontWeight: 600}}>{getTeacherName(s.teacherId)} <span style={{fontSize: '11px', opacity: 0.5}}>代</span> {s.leaveTeacherName}</span>
+                             <div style={{ display: 'flex', gap: '4px' }}>
+                               <button className="btn-icon" onClick={() => handleEdit(s)}>✏️</button>
+                               <button className="btn-icon" onClick={() => handleDeleteSchedule(s.id)}>🗑️</button>
+                             </div>
+                           </div>
+                           <div style={{ fontSize: '12px', marginTop: '4px', display: 'flex', gap: '8px' }}>
+                             <span className={`compact-status ${s.status}`}>{STATUS_MAP[s.status]?.label}</span>
+                             <span style={{opacity: 0.7}}>{s.subject || '無科目'} | {s.className || '無班級'}</span>
+                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // 右側麵板 (保留現有 Side Panel 功能但在週/日檢視下視情況縮減)
+  const selectedSchedules = getSchedulesForDate(selectedDate);
   const groupedSchedules = useMemo(() => {
     const groups = {};
-    if (!selectedSchedules || selectedSchedules.length === 0) return [];
-
     selectedSchedules.forEach(s => {
-      // 複合 Key：確保狀態改變或 ID 變動時能正確拆分組件
       const key = `${s.leaveTeacherName}-${s.teacherId}-${s.status}`;
-      if (!groups[key]) {
-        groups[key] = {
-          id: key,
-          leaveTeacherName: s.leaveTeacherName,
-          teacherId: s.teacherId,
-          status: s.status,
-          items: []
-        };
-      }
+      if (!groups[key]) groups[key] = { id: key, leaveTeacherName: s.leaveTeacherName, teacherId: s.teacherId, status: s.status, items: [] };
       groups[key].items.push(s);
     });
     return Object.values(groups);
-  }, [selectedSchedules, selectedDate]);
+  }, [selectedSchedules]);
 
-  // 節次類型 badge
+  const handleDayClick = (dStr) => {
+    setSelectedDate(dStr);
+  };
+
+  const handleAddNew = () => {
+    setEditingSchedule(null);
+    setShowModal(true);
+  };
+
   const getPeriodTypeBadge = (s) => {
     if (s.periodType === 'fullday') return { label: '整天', cls: 'badge-fullday' };
     if (s.periodType === 'halfday') return { label: '半天', cls: 'badge-halfday' };
@@ -151,230 +257,93 @@ export default function Calendar() {
   };
 
   return (
-    <div className="animate-in">
-      <div className="page-header">
-        <h1 className="page-title">排程行事曆</h1>
-        <p className="page-subtitle">管理代課老師的排程與時間安排</p>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '24px', alignItems: 'start' }}>
-        {/* Calendar */}
-        <div className="calendar-container">
-          <div className="calendar-header">
-            <h2 className="calendar-title">{year}年 {monthNames[month]}</h2>
-            <div className="calendar-nav">
-              <button className="calendar-nav-btn" onClick={goToToday} title="今天">
-                今
-              </button>
-              <button className="calendar-nav-btn" onClick={goToPrevMonth} id="cal-prev">
-                ◀
-              </button>
-              <button className="calendar-nav-btn" onClick={goToNextMonth} id="cal-next">
-                ▶
-              </button>
-            </div>
+    <div className="calendar-page animate-in">
+      {/* Header With View Context */}
+      <div className="page-header" style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 className="page-title">
+              {viewMode === 'month' && `${baseDate.getFullYear()}年 ${baseDate.getMonth() + 1}月`}
+              {viewMode === 'week' && getWeekRangeDisplay(baseDate)}
+              {viewMode === 'day' && formatDateChinese(formatDate(baseDate))}
+            </h1>
+            <p className="page-subtitle">直觀掌控代課人力分佈與節次安排</p>
           </div>
-
-          <div className="calendar-weekdays">
-            {['日', '一', '二', '三', '四', '五', '六'].map(d => (
-              <div key={d} className="calendar-weekday">{d}</div>
-            ))}
-          </div>
-
-          <div className="calendar-grid">
-            {days.map((day, idx) => {
-              const dateStr = formatDate(day.date);
-              const daySchedules = getSchedulesForDate(dateStr);
-              const isToday = dateStr === todayStr;
-              const isSelected = dateStr === selectedDate;
-
-              return (
-                <div
-                  key={idx}
-                  className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
-                  onClick={() => handleDayClick(dateStr)}
-                >
-                  <span className="calendar-day-number">{day.date.getDate()}</span>
-                  {daySchedules.length > 0 && (
-                    <div className="calendar-day-dots">
-                      {daySchedules.slice(0, 3).map((s, i) => (
-                        <span key={i} className={`calendar-dot ${s.status}`} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          
+          <div className="view-switcher">
+            <button className={`view-btn ${viewMode === 'month' ? 'active' : ''}`} onClick={() => setViewMode('month')}>月檢排程</button>
+            <button className={`view-btn ${viewMode === 'week' ? 'active' : ''}`} onClick={() => setViewMode('week')}>週功課表</button>
+            <button className={`view-btn ${viewMode === 'day' ? 'active' : ''}`} onClick={() => setViewMode('day')}>日檢詳情</button>
           </div>
         </div>
+      </div>
 
-        {/* Side Panel */}
-        <div>
-          <div className="card" style={{ marginBottom: '16px' }}>
-            <div className="card-header">
-              <h2 className="card-title">
-                {selectedDate ? formatDateChinese(selectedDate) : '請選擇日期'}
-              </h2>
-              {selectedDate && (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    className="btn btn-sm"
-                    onClick={handleRefresh}
-                    title="重新讀取資料"
-                    style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}
-                  >
-                    🔄
-                  </button>
-                  <button
-                    className="btn btn-sm btn-primary"
-                    onClick={handleAddNew}
-                    id="btn-add-schedule"
-                  >
-                    ➕ 新增
-                  </button>
+      <div style={{ display: 'grid', gridTemplateColumns: viewMode === 'month' ? '1fr 380px' : '1fr', gap: '24px' }}>
+        <div className="calendar-view-container">
+          {/* Navigation Controls */}
+          <div className="calendar-header" style={{ border: 'none', background: 'transparent', padding: '0 0 16px 0' }}>
+             <div className="calendar-nav" style={{ background: 'var(--bg-glass)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+              <button className="calendar-nav-btn" onClick={goToPrev}>◀</button>
+              <button className="calendar-nav-btn" onClick={goToToday} style={{ fontSize: '13px', fontWeight: 600 }}>今日</button>
+              <button className="calendar-nav-btn" onClick={goToNext}>▶</button>
+            </div>
+            <button className="btn btn-primary" onClick={handleAddNew}>➕ 新增排程</button>
+          </div>
+
+          {viewMode === 'month' && renderMonthView()}
+          {viewMode === 'week' && renderWeekView()}
+          {viewMode === 'day' && renderDayView()}
+        </div>
+
+        {/* 只有月檢視顯示側邊欄，週/日檢視已在網格中包含足夠資訊 */}
+        {viewMode === 'month' && (
+          <div className="calendar-sidebar">
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">{formatDateChinese(selectedDate)} 的排程</h2>
+                <button className="btn-icon" onClick={handleRefresh}>🔄</button>
+              </div>
+              
+              {groupedSchedules.length === 0 ? (
+                <div className="empty-state" style={{ padding: '40px 0' }}>
+                   <p className="empty-desc">此日無特殊排程</p>
+                </div>
+              ) : (
+                <div className="schedule-list">
+                  {groupedSchedules.map(group => (
+                    <div key={group.id} className="schedule-item-compact">
+                       <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                         <span className={`compact-status ${group.status}`}>{STATUS_MAP[group.status]?.label}</span>
+                         <span style={{fontWeight: 600}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
+                       </div>
+                       {group.items.map(s => (
+                         <div key={s.id} style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                           <span>{getPeriodTypeBadge(s).label} ({s.classPeriods.map(p => PERIOD_LABELS[p-1]).join(',')})</span>
+                           <div style={{ display: 'flex', gap: '6px' }}>
+                             <button className="link-btn" onClick={() => handleEdit(s)}>編</button>
+                             <button className="link-btn" onClick={() => handleDeleteSchedule(s.id)}>刪</button>
+                           </div>
+                         </div>
+                       ))}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-
-            {!selectedDate ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>
-                <div className="empty-icon">👈</div>
-                <p className="empty-desc">點擊行事曆上的日期來查看或新增排程</p>
-              </div>
-            ) : selectedSchedules.length === 0 ? (
-              <div className="empty-state" style={{ padding: '64px 24px' }}>
-                <p className="empty-desc">此日無排程安排，所有老師皆為空閒</p>
-              </div>
-            ) : (
-              <div className="schedule-list">
-                {groupedSchedules.map(group => (
-                  <div key={group.id} className="schedule-item-compact" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-                    {/* Header: Teachers & Status */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid var(--border-subtle)' }}>
-                      <span className={`compact-status ${group.status}`} style={{
-                        background: STATUS_MAP[group.status]?.bg,
-                        color: STATUS_MAP[group.status]?.color,
-                        padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'
-                      }}>
-                        {STATUS_MAP[group.status]?.label}
-                      </span>
-                      <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                        <span style={{opacity: 0.6}}>{group.leaveTeacherName || '未填'}</span> 
-                        <span style={{margin:'0 6px', opacity:0.3}}>→</span> 
-                        <span style={{color: group.status === 'unassigned' ? 'var(--text-muted)' : 'var(--primary-400)'}}>
-                          {group.status === 'unassigned' ? '尚未指派' : getTeacherName(group.teacherId)}
-                        </span>
-                      </span>
-                    </div>
-
-                    {/* Sub-items List */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {group.items.map(s => {
-                        const periodBadge = getPeriodTypeBadge(s);
-                        return (
-                          <div key={s.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                            <div style={{ flex: 1 }}>
-                              <div className="compact-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{s.subject || '無科目'}</span>
-                                <span style={{ opacity: 0.3 }}>|</span>
-                                <span>{periodBadge.label} ({(s.classPeriods || []).map(p => PERIOD_LABELS[p - 1] || `第${p}節`).join(', ')})</span>
-                                {s.className && (
-                                  <>
-                                    <span style={{ opacity: 0.3 }}>|</span>
-                                    <span>{s.className}</span>
-                                  </>
-                                )}
-                              </div>
-                              {s.note && (
-                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', fontStyle: 'italic' }}>
-                                  {s.note}
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div style={{ display: 'flex', gap: '4px', position: 'relative', zIndex: 10 }}>
-                              {s.status === 'unassigned' && (
-                                <button
-                                  type="button"
-                                  className="btn-icon"
-                                  onClick={(e) => { e.stopPropagation(); handleEdit(s); }}
-                                  title="分配老師"
-                                  style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}
-                                >
-                                  🔎
-                                </button>
-                              )}
-                              {s.status === 'pending' && (
-                                <>
-                                  <button
-                                    type="button"
-                                    className="btn-icon"
-                                    onClick={(e) => { e.stopPropagation(); handleStatusChange(s.id, 'confirmed'); }}
-                                    title="確認"
-                                    style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}
-                                  >
-                                    ✅
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn-icon"
-                                    onClick={(e) => { e.stopPropagation(); handleStatusChange(s.id, 'rejected'); }}
-                                    title="拒絕"
-                                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}
-                                  >
-                                    ❌
-                                  </button>
-                                </>
-                              )}
-                              <button
-                                type="button"
-                                className="btn-icon"
-                                onClick={(e) => { e.stopPropagation(); handleEdit(s); }}
-                                title="編輯"
-                                style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)' }}
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                type="button"
-                                className="btn-icon"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s.id); }}
-                                title="刪除"
-                                style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)' }}
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Legend */}
-          <div className="card">
-            <h3 className="card-title" style={{ marginBottom: '12px', fontSize: '14px' }}>圖例說明</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                <span className="calendar-dot pending" /> 待確認
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                <span className="calendar-dot confirmed" /> 已確認
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                <span className="calendar-dot busy" /> 已拒絕
-              </div>
+            
+            <div className="card" style={{ marginTop: '16px' }}>
+               <h3 className="card-title" style={{ fontSize: '14px', marginBottom: '12px' }}>圖例說明</h3>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span className="calendar-dot pending" /> 待確認 (橘)</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span className="calendar-dot confirmed" /> 已確認 (綠)</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span className="calendar-dot unassigned" /> 待分派 (藍)</div>
+               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Schedule Modal */}
-      {showModal && selectedDate && (
+      {showModal && (
         <ScheduleModal
           date={selectedDate}
           teachers={teachers}

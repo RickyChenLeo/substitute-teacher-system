@@ -88,3 +88,43 @@ export const STATUS_MAP = {
 };
 
 export const PERIOD_LABELS = ['導師時間', '第一節', '第二節', '第三節', '第四節', '午休', '第五節', '第六節', '第七節'];
+
+/**
+ * 取得傳入日期所在的整週 (週日到週六)
+ * @param {Date} date 
+ * @returns {Date[]}
+ */
+export function getWeekDays(date) {
+  const start = new Date(date);
+  start.setDate(date.getDate() - date.getDay());
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+/**
+ * 取得一週的標記顯示
+ */
+export function getWeekRangeDisplay(date) {
+  const week = getWeekDays(date);
+  const start = week[0];
+  const end = week[6];
+  if (start.getMonth() === end.getMonth()) {
+    return `${start.getFullYear()}年 ${start.getMonth() + 1}月 ${start.getDate()} - ${end.getDate()}日`;
+  }
+  return `${start.getMonth() + 1}月${start.getDate()}日 - ${end.getMonth() + 1}月${end.getDate()}日`;
+}
+
+/**
+ * 安全比較日期字串
+ */
+export function isSameDay(d1, d2) {
+  if (!d1 || !d2) return false;
+  const s1 = typeof d1 === 'string' ? d1 : formatDate(d1);
+  const s2 = typeof d2 === 'string' ? d2 : formatDate(d2);
+  return s1 === s2;
+}

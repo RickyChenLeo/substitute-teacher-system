@@ -1739,3 +1739,186 @@ body {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+/* ====== Calendar View Switcher ====== */
+.view-switcher {
+  display: flex;
+  background: var(--bg-glass);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.view-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-btn.active {
+  background: var(--primary-500);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ====== Month View Tags ====== */
+.calendar-item-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.calendar-tag-item {
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  border: 1px solid transparent;
+}
+
+.calendar-tag-item.pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.calendar-tag-item.confirmed {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.calendar-tag-item.unassigned {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary-400);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* ====== Week View Styles ====== */
+.week-grid-wrapper {
+  overflow-x: auto;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  min-width: 800px; /* 確保在小螢幕也能滾動看清 */
+}
+
+.week-header-cell {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-default);
+  border-right: 1px solid var(--border-default);
+  background: var(--bg-glass);
+}
+
+.week-header-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.week-header-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.week-time-label {
+  padding: 12px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-default);
+  background: var(--bg-glass);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.week-slot {
+  padding: 8px;
+  min-height: 80px;
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  transition: background 0.2s;
+  position: relative;
+}
+
+.week-slot:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.week-slot.today {
+  background: rgba(99, 102, 241, 0.03);
+}
+
+.week-slot-item {
+  font-size: 11px;
+  padding: 6px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.week-slot-item:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.week-teacher-name {
+  font-weight: 700;
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* Day View Styles */
+.day-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.day-period-card {
+  display: flex;
+  background: var(--bg-glass);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.day-period-label {
+  width: 80px;
+  background: var(--bg-glass-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.day-period-content {
+  flex: 1;
+  padding: 12px;
+}
