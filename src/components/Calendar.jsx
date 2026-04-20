@@ -115,12 +115,31 @@ export default function Calendar() {
               >
                 <span className="calendar-day-number">{day.date.getDate()}</span>
                 <div className="calendar-item-tags">
-                  {daySchedules.slice(0, 4).map(s => (
-                    <div key={s.id} className={`calendar-tag-item ${s.status}`}>
-                      {PERIOD_LABELS[s.classPeriods[0] - 1]} {getTeacherName(s.teacherId)}
-                    </div>
-                  ))}
-                  {daySchedules.length > 4 && <div className="calendar-tag-item" style={{opacity:0.6}}>+{daySchedules.length - 4}...</div>}
+                  {(() => {
+                    // 以老師為單位進行分組顯示，節省空間
+                    const teacherGroups = {};
+                    daySchedules.forEach(s => {
+                      const name = getTeacherName(s.teacherId);
+                      if (!teacherGroups[name]) teacherGroups[name] = { status: s.status, periods: [] };
+                      teacherGroups[name].periods.push(...s.classPeriods);
+                    });
+                    
+                    const groupEntries = Object.entries(teacherGroups);
+                    return (
+                      <>
+                        {groupEntries.slice(0, 2).map(([name, data]) => (
+                          <div key={name} className={`calendar-tag-item ${data.status}`} style={{ fontSize: '10px' }}>
+                            {name} ({[...new Set(data.periods)].sort().join(',')})
+                          </div>
+                        ))}
+                        {groupEntries.length > 2 && (
+                          <div className="calendar-tag-item" style={{ opacity: 0.5, fontSize: '9px', textAlign: 'center' }}>
+                            + 還有 {groupEntries.length - 2} 位
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -330,6 +349,26 @@ export default function Calendar() {
                          <div key={s.id} style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                            <span>{getPeriodTypeBadge(s).label} ({s.classPeriods.map(p => PERIOD_LABELS[p-1]).join(',')})</span>
                            <div style={{ display: 'flex', gap: '4px' }}>
+                             {s.status === 'pending' && (
+                               <>
+                                 <button 
+                                   className="btn-icon" 
+                                   onClick={(e) => { e.stopPropagation(); handleStatusChange(s.id, 'confirmed'); }}
+                                   title="確認"
+                                   style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}
+                                 >
+                                   ✅
+                                 </button>
+                                 <button 
+                                   className="btn-icon" 
+                                   onClick={(e) => { e.stopPropagation(); handleStatusChange(s.id, 'rejected'); }}
+                                   title="拒絕"
+                                   style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}
+                                 >
+                                   ❌
+                                 </button>
+                               </>
+                             )}
                              <button className="btn-icon" onClick={() => handleEdit(s)} title="編輯">✏️</button>
                              <button className="btn-icon" onClick={() => handleDeleteSchedule(s.id)} title="刪除">🗑️</button>
                            </div>
