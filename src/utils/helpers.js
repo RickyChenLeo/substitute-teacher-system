@@ -86,3 +86,5 @@ export const STATUS_MAP = {
   confirmed: { label: '已確認', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
   rejected: { label: '已拒絕', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' }
 };
+
+export const PERIOD_LABELS = ['導師時間', '第一節', '第二節', '第三節', '第四節', '午休', '第五節', '第六節', '第七節'];

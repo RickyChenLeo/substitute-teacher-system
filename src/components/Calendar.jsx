@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
 import { useSchedules, useTeachers, addSchedule, deleteSchedule, updateSchedule } from '../utils/storage';
-import { getMonthDays, formatDate, formatDateChinese, getTodayStr, STATUS_MAP } from '../utils/helpers';
+import { getMonthDays, formatDate, formatDateChinese, getTodayStr, STATUS_MAP, PERIOD_LABELS } from '../utils/helpers';
 import ScheduleModal from './ScheduleModal';
 
 export default function Calendar() {
@@ -277,7 +276,7 @@ export default function Calendar() {
                               <div className="compact-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
                                 <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{s.subject || '無科目'}</span>
                                 <span style={{ opacity: 0.3 }}>|</span>
-                                <span>{periodBadge.label} ({(s.classPeriods || []).map(p => `第${p}節`).join(', ')})</span>
+                                <span>{periodBadge.label} ({(s.classPeriods || []).map(p => PERIOD_LABELS[p - 1] || `第${p}節`).join(', ')})</span>
                                 {s.className && (
                                   <>
                                     <span style={{ opacity: 0.3 }}>|</span>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { formatDateChinese } from '../utils/helpers';
+import { formatDateChinese, PERIOD_LABELS } from '../utils/helpers';
 import { getAvailableTeachersForPeriods } from '../utils/storage';
 
 // 限定七大科目
@@ -13,7 +13,6 @@ const SCHEDULE_SUBJECTS = [
   { id: 'health', name: '健康', icon: '❤️' },
 ];
 
-const PERIOD_LABELS = ['導師時間', '第一節', '第二節', '第三節', '第四節', '午休', '第五節', '第六節', '第七節'];
 
 export default function ScheduleModal({ date, teachers, editSchedule, onSave, onClose }) {
   const [step, setStep] = useState(editSchedule ? 2 : 1);
