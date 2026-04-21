@@ -163,9 +163,17 @@ export default function Calendar() {
     
     return teachers.map(teacher => {
       const busyPeriods = new Set();
+      let hasUnconfirmedFullDay = false;
+      let hasUnconfirmedHalfDay = false;
+
       daySchedules.forEach(s => {
         if (s.teacherId === teacher.id) {
-          (s.classPeriods || []).forEach(p => busyPeriods.add(p));
+          if (s.classPeriods && s.classPeriods.length > 0) {
+            s.classPeriods.forEach(p => busyPeriods.add(p));
+          } else {
+            if (s.periodType === 'fullday') hasUnconfirmedFullDay = true;
+            if (s.periodType === 'halfday') hasUnconfirmedHalfDay = true;
+          }
         }
       });
       
@@ -173,17 +181,34 @@ export default function Calendar() {
       let freeCount = 0;
       for (let p = 1; p <= 9; p++) {
         const isBusy = busyPeriods.has(p);
-        if (!isBusy) freeCount++;
-        periodsStatus.push(isBusy);
+        let status = 'is-free';
+        if (isBusy) {
+          status = 'is-busy';
+        } else if (hasUnconfirmedFullDay || hasUnconfirmedHalfDay) {
+          status = 'is-unconfirmed';
+        } else {
+          freeCount++;
+        }
+        periodsStatus.push(status);
       }
       
+      let summaryText = `${freeCount}/9 空`;
+      if (hasUnconfirmedFullDay) summaryText = '整天未排';
+      else if (hasUnconfirmedHalfDay) summaryText = '半天未排';
+
+      let sortScore = freeCount;
+      if (hasUnconfirmedFullDay) sortScore = -10;
+      if (hasUnconfirmedHalfDay) sortScore = -5;
+
       return {
         id: teacher.id,
         name: teacher.name,
         freeCount,
-        periodsStatus // [true, false, ...] -> true means busy
+        sortScore,
+        summaryText,
+        periodsStatus // ['is-busy', 'is-free', 'is-unconfirmed', ...]
       };
-    }).sort((a, b) => b.freeCount - a.freeCount);
+    }).sort((a, b) => b.sortScore - a.sortScore);
   }, [selectedDate, schedules, teachers]);
 
   // 月檢視渲染
@@ -514,16 +539,16 @@ export default function Calendar() {
                    <div key={stat.id} className="availability-item-row" onClick={() => handleQuickBook(stat.id)}>
                      <div className="availability-teacher-name" title={stat.name}>{stat.name}</div>
                      <div className="availability-mini-grid">
-                       {stat.periodsStatus.map((isBusy, idx) => (
+                       {stat.periodsStatus.map((statusClass, idx) => (
                          <div 
                            key={idx} 
-                           className={`availability-period-dot ${isBusy ? 'is-busy' : 'is-free'}`}
-                           title={PERIOD_LABELS[idx] + (isBusy ? ' (已有課)' : ' (有空)')}
+                           className={`availability-period-dot ${statusClass}`}
+                           title={PERIOD_LABELS[idx] + (statusClass === 'is-busy' ? ' (已有課)' : statusClass === 'is-unconfirmed' ? ' (未確認節次)' : ' (有空)')}
                          />
                        ))}
                      </div>
                      <div className="availability-summary-text">
-                       {stat.freeCount}/9 空
+                       {stat.summaryText}
                      </div>
                    </div>
                  ))}
