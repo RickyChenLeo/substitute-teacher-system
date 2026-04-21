@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useSchedules, useTeachers, addSchedule, deleteSchedule, updateSchedule, initializeFirebaseSync } from '../utils/storage';
+import { useSchedules, useTeachers, addSchedule, deleteSchedule, updateSchedule, initializeFirebaseSync, getSchedulesByDate } from '../utils/storage';
 import { 
   getMonthDays, getWeekDays, formatDate, formatDateChinese, getTodayStr, 
   STATUS_MAP, PERIOD_LABELS, isSameDay, getWeekRangeDisplay 
