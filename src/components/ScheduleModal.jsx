@@ -36,6 +36,8 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
   });
 
   const activeDate = editSchedule?.date || date;
+  const isQuickBook = !!(editSchedule?.teacherId && !editSchedule?.id);
+  const targetTeacherName = isQuickBook ? teachers.find(t => t.id === editSchedule.teacherId)?.name : '';
 
   const handleChange = (field, value) => {
     setForm(prev => {
@@ -246,6 +248,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
         <div className="modal-body">
           <div className="schedule-date-badge">
             {formatDateChinese(activeDate)}
+            {isQuickBook && <span className="quick-book-target">代課老師：{targetTeacherName}</span>}
           </div>
 
           {step === 1 && (
@@ -435,7 +438,12 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                   <button type="button" className="btn btn-secondary" onClick={handleSaveEmpty}>
                     儲存缺額 (暫找無人)
                   </button>
-                  {editSchedule && (
+                  {isQuickBook && (
+                    <button type="button" className="btn btn-primary" style={{ background: 'var(--success)' }} onClick={() => handleSelectTeacherAndSave(editSchedule.teacherId)}>
+                      儲存並指派給 {targetTeacherName}
+                    </button>
+                  )}
+                  {editSchedule?.id && (
                     <button type="button" className="btn btn-primary" style={{ background: 'var(--success)' }} onClick={handleUpdateDirectly}>
                       直接儲存修改
                     </button>

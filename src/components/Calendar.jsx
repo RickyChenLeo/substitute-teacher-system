@@ -29,6 +29,11 @@ export default function Calendar() {
     setSelectedIds([]); // 切換時清空選取
   };
 
+  const handleQuickBook = (teacherId) => {
+    setEditingSchedule({ teacherId, date: selectedDate });
+    setShowModal(true);
+  };
+
   const goToNext = () => {
     const next = new Date(baseDate);
     if (viewMode === 'month') next.setMonth(baseDate.getMonth() + 1);
@@ -151,6 +156,35 @@ export default function Calendar() {
     setEditingSchedule(null);
     setShowModal(true);
   };
+
+  // 計算當日老師可用性 (9 節課狀態)
+  const availabilityStats = useMemo(() => {
+    const daySchedules = getSchedulesByDate(selectedDate).filter(s => s.status !== 'rejected');
+    
+    return teachers.map(teacher => {
+      const busyPeriods = new Set();
+      daySchedules.forEach(s => {
+        if (s.teacherId === teacher.id) {
+          (s.classPeriods || []).forEach(p => busyPeriods.add(p));
+        }
+      });
+      
+      const periodsStatus = [];
+      let freeCount = 0;
+      for (let p = 1; p <= 9; p++) {
+        const isBusy = busyPeriods.has(p);
+        if (!isBusy) freeCount++;
+        periodsStatus.push(isBusy);
+      }
+      
+      return {
+        id: teacher.id,
+        name: teacher.name,
+        freeCount,
+        periodsStatus // [true, false, ...] -> true means busy
+      };
+    }).sort((a, b) => b.freeCount - a.freeCount);
+  }, [selectedDate, schedules, teachers]);
 
   // 月檢視渲染
   function renderMonthView() {
@@ -469,6 +503,33 @@ export default function Calendar() {
               )}
             </div>
             
+            {/* 當日推薦候選人 (可用性視覺化) */}
+            <div className="card availability-card">
+               <div className="card-header">
+                 <h3 className="card-title">當日推薦候選人</h3>
+                 <span className="form-label-hint">點擊排表</span>
+               </div>
+               <div className="availability-list-scroll">
+                 {availabilityStats.map(stat => (
+                   <div key={stat.id} className="availability-item-row" onClick={() => handleQuickBook(stat.id)}>
+                     <div className="availability-teacher-name" title={stat.name}>{stat.name}</div>
+                     <div className="availability-mini-grid">
+                       {stat.periodsStatus.map((isBusy, idx) => (
+                         <div 
+                           key={idx} 
+                           className={`availability-period-dot ${isBusy ? 'is-busy' : 'is-free'}`}
+                           title={PERIOD_LABELS[idx] + (isBusy ? ' (已有課)' : ' (有空)')}
+                         />
+                       ))}
+                     </div>
+                     <div className="availability-summary-text">
+                       {stat.freeCount}/9 空
+                     </div>
+                   </div>
+                 ))}
+               </div>
+            </div>
+
             <div className="card" style={{ marginTop: '16px' }}>
                <h3 className="card-title" style={{ fontSize: '14px', marginBottom: '12px' }}>圖例說明</h3>
                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
