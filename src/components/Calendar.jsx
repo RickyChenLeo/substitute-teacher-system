@@ -330,7 +330,23 @@ export default function Calendar() {
       if (!groups[key]) groups[key] = { id: key, leaveTeacherName: s.leaveTeacherName, teacherId: s.teacherId, status: s.status, items: [] };
       groups[key].items.push(s);
     });
-    return Object.values(groups);
+    
+    // 對每個分組內的項目按節次排序
+    const sortedGroups = Object.values(groups).map(group => ({
+      ...group,
+      items: [...group.items].sort((a, b) => {
+        const aPeriod = a.classPeriods?.[0] || 0;
+        const bPeriod = b.classPeriods?.[0] || 0;
+        return aPeriod - bPeriod;
+      })
+    }));
+
+    // 對分組本身也按最早節次排序
+    return sortedGroups.sort((a, b) => {
+      const aMin = Math.min(...(a.items.flatMap(i => i.classPeriods || [99])));
+      const bMin = Math.min(...(b.items.flatMap(i => i.classPeriods || [99])));
+      return aMin - bMin;
+    });
   }, [selectedSchedules]);
 
   return (
