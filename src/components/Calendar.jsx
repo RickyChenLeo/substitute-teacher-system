@@ -188,11 +188,20 @@ export default function Calendar() {
                     });
                     
                     const groupEntries = Object.entries(teacherGroups);
+                    // 建立縮寫映射：1->導, 2->1, 3->2, 4->3, 5->4, 6->午, 7->5, 8->6, 9->7
+                    const getShortPeriod = (p) => {
+                      if (p === 1) return '導';
+                      if (p === 6) return '午';
+                      if (p >= 2 && p <= 5) return p - 1;
+                      if (p >= 7 && p <= 9) return p - 2;
+                      return p;
+                    };
+
                     return (
                       <>
                         {groupEntries.slice(0, 2).map(([name, data]) => (
                           <div key={name} className={`calendar-tag-item ${data.status}`} style={{ fontSize: '10px' }}>
-                            {name} ({[...new Set(data.periods)].sort().join(',')})
+                            {name} ({[...new Set(data.periods)].sort((a,b)=>a-b).map(getShortPeriod).join(',')})
                           </div>
                         ))}
                         {groupEntries.length > 2 && (
