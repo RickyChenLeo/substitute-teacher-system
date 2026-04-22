@@ -526,16 +526,17 @@ export default function Calendar() {
                          <div 
                            onClick={() => toggleGroupCollapse(isCollapsed ? (group.status === 'confirmed' ? group.id + '_expanded' : group.id) : (group.status === 'confirmed' ? group.id + '_expanded' : group.id))}
                            style={{ 
-                             paddingBottom: isCollapsed ? '0' : '8px', 
+                             padding: '4px 0',
                              marginBottom: isCollapsed ? '0' : '8px', 
                              display: 'flex', 
                              alignItems: 'center', 
                              justifyContent: 'space-between',
-                             cursor: 'pointer'
+                             cursor: 'pointer',
+                             minHeight: '40px'
                            }}
                          >
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                             <span className={`compact-status ${group.status}`} style={{ fontSize: '10px' }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                             <span className={`compact-status ${group.status}`}>
                                {STATUS_MAP[group.status]?.label}
                              </span>
                              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
