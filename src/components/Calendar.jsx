@@ -14,6 +14,16 @@ export default function Calendar() {
   const [selectedIds, setSelectedIds] = useState([]); // 被選取的排程 ID
   const [showModal, setShowModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
+  const [collapsedGroups, setCollapsedGroups] = useState(new Set());
+
+  const toggleGroupCollapse = (groupId) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  };
   
   const schedules = useSchedules();
   const teachers = useTeachers();
@@ -507,49 +517,86 @@ export default function Calendar() {
                 </div>
               ) : (
                 <div className="schedule-list">
-                  {groupedSchedules.map(group => (
-                    <div key={group.id} className="schedule-item-compact">
-                       <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                           <span className={`compact-status ${group.status}`}>{STATUS_MAP[group.status]?.label}</span>
-                           <span style={{fontWeight: 600}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
-                         </div>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                           <button className="btn-icon" onClick={() => handleGroupEdit(group.items)} title="編輯此群組">✏️</button>
-                           <label className="checkbox-group-label" onClick={(e) => { e.preventDefault(); toggleSelectGroup(group.items); }}>
-                             <input 
-                               type="checkbox" 
-                               className="custom-checkbox" 
-                               checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(s.id))}
-                               readOnly
-                             />
-                             全選
-                           </label>
-                         </div>
-                       </div>
-                       {group.items.map(s => (
-                         <div key={s.id} style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                           <input 
-                              type="checkbox" 
-                              className="custom-checkbox" 
-                              checked={selectedIds.includes(s.id)}
-                              onChange={() => toggleSelect(s.id)}
-                           />
-                           <span style={{ flex: 1 }}>{getPeriodTypeBadge(s).label} ({s.classPeriods.map(p => PERIOD_LABELS[p-1]).join(',')})</span>
-                           <div style={{ display: 'flex', gap: '4px' }}>
-                             {s.status === 'pending' && (
-                               <>
-                                 <button className="btn-icon" onClick={() => handleStatusChange(s.id, 'confirmed')} title="確認">✅</button>
-                                 <button className="btn-icon" onClick={() => handleStatusChange(s.id, 'rejected')} title="拒絕">❌</button>
-                               </>
-                             )}
-                             <button className="btn-icon" onClick={() => handleEdit(s)} title="編輯">✏️</button>
-                             <button className="btn-icon" onClick={() => handleDeleteSchedule(s.id)} title="刪除">🗑️</button>
+                  {groupedSchedules.map(group => {
+                    const isCollapsed = collapsedGroups.has(group.id) || (group.status === 'confirmed' && !collapsedGroups.has(group.id + '_expanded'));
+                    const allPeriods = group.items.flatMap(s => s.classPeriods).sort((a,b)=>a-b);
+                    
+                    return (
+                      <div key={group.id} className={`schedule-item-compact ${isCollapsed ? 'collapsed' : ''}`}>
+                         <div 
+                           onClick={() => toggleGroupCollapse(isCollapsed ? (group.status === 'confirmed' ? group.id + '_expanded' : group.id) : (group.status === 'confirmed' ? group.id + '_expanded' : group.id))}
+                           style={{ 
+                             paddingBottom: isCollapsed ? '0' : '8px', 
+                             marginBottom: isCollapsed ? '0' : '8px', 
+                             display: 'flex', 
+                             alignItems: 'center', 
+                             justifyContent: 'space-between',
+                             cursor: 'pointer'
+                           }}
+                         >
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                             <span className={`compact-status ${group.status}`} style={{ fontSize: '10px' }}>
+                               {STATUS_MAP[group.status]?.label}
+                             </span>
+                             <div style={{ display: 'flex', flexDirection: 'column' }}>
+                               <span style={{fontWeight: 600, fontSize: '13px'}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
+                               {isCollapsed && (
+                                 <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                   節次: {allPeriods.map(p => {
+                                      if (p === 1) return '導';
+                                      if (p === 6) return '午';
+                                      if (p >= 2 && p <= 5) return p - 1;
+                                      return p - 2;
+                                   }).join(', ')}
+                                 </span>
+                               )}
+                             </div>
+                           </div>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={e => e.stopPropagation()}>
+                             <button className="btn-icon" onClick={() => handleGroupEdit(group.items)} title="編輯群組" style={{ opacity: 0.7 }}>✏️</button>
+                             <label className="checkbox-group-label" onClick={(e) => { e.preventDefault(); toggleSelectGroup(group.items); }}>
+                               <input 
+                                 type="checkbox" 
+                                 className="custom-checkbox" 
+                                 checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(s.id))}
+                                 readOnly
+                               />
+                               <span style={{ fontSize: '11px' }}>全選</span>
+                             </label>
+                             <span style={{ marginLeft: '4px', fontSize: '12px', opacity: 0.5 }}>{isCollapsed ? '▼' : '▲'}</span>
                            </div>
                          </div>
-                       ))}
-                    </div>
-                  ))}
+                         
+                         {!isCollapsed && (
+                           <div className="schedule-group-details animate-in" style={{ animationName: 'slideDown', animationDuration: '0.2s' }}>
+                             {group.items.map(s => (
+                               <div key={s.id} className="schedule-detail-row">
+                                 <input 
+                                    type="checkbox" 
+                                    className="custom-checkbox" 
+                                    checked={selectedIds.includes(s.id)}
+                                    onChange={() => toggleSelect(s.id)}
+                                 />
+                                 <span style={{ flex: 1, fontSize: '12px' }}>
+                                   {s.classPeriods.map(p => PERIOD_LABELS[p-1]).join(',')}
+                                 </span>
+                                 <div className="row-actions">
+                                   {s.status === 'pending' && (
+                                     <>
+                                       <button className="btn-icon sm" onClick={() => handleStatusChange(s.id, 'confirmed')} title="確認">✅</button>
+                                       <button className="btn-icon sm" onClick={() => handleStatusChange(s.id, 'rejected')} title="拒絕">❌</button>
+                                     </>
+                                   )}
+                                   <button className="btn-icon sm" onClick={() => handleEdit(s)} title="編輯">✏️</button>
+                                   <button className="btn-icon sm" onClick={() => handleDeleteSchedule(s.id)} title="刪除">🗑️</button>
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

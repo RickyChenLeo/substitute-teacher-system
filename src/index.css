@@ -2105,6 +2105,38 @@ body {
   white-space: nowrap;
 }
 
+/* Compact Sidebar Details */
+.schedule-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s;
+}
+
+.schedule-detail-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-icon.sm {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-group-details {
+  padding-left: 4px;
+  border-left: 2px solid var(--border-subtle);
+  margin-left: 4px;
+}
+
 /* ====== Subject Grid selection ====== */
 .subject-grid {
   display: grid;
