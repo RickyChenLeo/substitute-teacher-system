@@ -15,28 +15,59 @@ const SCHEDULE_SUBJECTS = [
 
 
 export default function ScheduleModal({ date, teachers, editSchedule, onSave, onClose }) {
+  const isBulkEdit = Array.isArray(editSchedule);
+  const firstSched = isBulkEdit ? editSchedule[0] : editSchedule;
+  const sharedLeaveTeacher = isBulkEdit ? firstSched?.leaveTeacherName : '';
+  const sharedSubject = isBulkEdit ? firstSched?.subject : '';
+
+  let initialPeriodType = firstSched?.periodType || 'single';
+  let initialPeriods = [];
+  
+  if (isBulkEdit) {
+    editSchedule.forEach(s => {
+      if (s.classPeriods) {
+        s.classPeriods.forEach(p => {
+          if (!initialPeriods.includes(p)) initialPeriods.push(p);
+        });
+      }
+    });
+    initialPeriods.sort((a,b) => a - b);
+    initialPeriodType = 'single'; // 合併批次強制以單節方式呈現
+  } else if (firstSched) {
+    initialPeriods = firstSched.classPeriods || [];
+  }
+
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [form, setForm] = useState({
-    leaveTeacherName: editSchedule?.leaveTeacherName || '',   // 請假老師
-    subject: editSchedule?.subject || '',             // 代課科目 (非單節用)
-    periodType: editSchedule?.periodType || '',          // single | halfday | fullday
-    selectedPeriods: editSchedule?.classPeriods || [],     // 所有模式共用：選擇的節次
-    className: editSchedule?.className || '',           // 班級 (非單節用)
-    note: editSchedule?.note || ''
+    leaveTeacherName: isBulkEdit ? sharedLeaveTeacher : (firstSched?.leaveTeacherName || ''),
+    subject: isBulkEdit ? sharedSubject : (firstSched?.subject || ''),
+    periodType: initialPeriodType,
+    selectedPeriods: initialPeriods,
+    className: firstSched?.className || '',
+    note: firstSched?.note || ''
   });
+
   const [periodDetails, setPeriodDetails] = useState(() => {
     const initial = {};
-    if (editSchedule?.id && editSchedule.classPeriods?.length > 0) {
-      editSchedule.classPeriods.forEach(p => {
-        initial[p] = { subject: editSchedule.subject || '', className: editSchedule.className || '' };
+    if (isBulkEdit) {
+      editSchedule.forEach(s => {
+        if (s.classPeriods) {
+          s.classPeriods.forEach(p => {
+            initial[p] = { subject: s.subject || '', className: s.className || '' };
+          });
+        }
+      });
+    } else if (firstSched?.id && firstSched.classPeriods?.length > 0) {
+      firstSched.classPeriods.forEach(p => {
+        initial[p] = { subject: firstSched.subject || '', className: firstSched.className || '' };
       });
     }
     return initial;
   });
 
-  const activeDate = editSchedule?.date || date;
-  const isQuickBook = !!(editSchedule?.teacherId && !editSchedule?.id);
+  const activeDate = firstSched?.date || date;
+  const isQuickBook = !!(!isBulkEdit && editSchedule?.teacherId && !editSchedule?.id);
   const targetTeacherName = isQuickBook ? teachers.find(t => t.id === editSchedule.teacherId)?.name : '';
 
   const handleChange = (field, value) => {
@@ -108,9 +139,12 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
   };
 
   const constructScheduleData = (teacherId, status) => {
+    // If it's a normal single edit, we can preserve the ID
+    const singleId = !isBulkEdit && editSchedule?.id ? editSchedule.id : null;
+
     if (form.periodType === 'single') {
       return form.selectedPeriods.map(p => ({
-        ...(editSchedule?.id && form.selectedPeriods.length === 1 && { id: editSchedule.id }),
+        ...(singleId && form.selectedPeriods.length === 1 && { id: singleId }),
         leaveTeacherName: form.leaveTeacherName.trim(),
         teacherId,
         subject: periodDetails[p]?.subject || '',
@@ -136,7 +170,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
     }
 
     return {
-      ...(editSchedule?.id && { id: editSchedule.id }),
+      ...(singleId && { id: singleId }),
       leaveTeacherName: form.leaveTeacherName.trim(),
       teacherId,
       subject: form.subject,
@@ -165,7 +199,7 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
     const error = validateForm();
     if (error) return alert(error);
     // 保留原本的老師與狀態
-    onSave(constructScheduleData(editSchedule?.teacherId || '', editSchedule?.status || 'unassigned'));
+    onSave(constructScheduleData(firstSched?.teacherId || '', firstSched?.status || 'unassigned'));
   };
 
   const searchSubject = form.periodType === 'single' 
@@ -443,13 +477,13 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                       儲存並指派給 {targetTeacherName}
                     </button>
                   )}
-                  {editSchedule?.id && (
+                  {!isBulkEdit && firstSched?.id && (
                     <button type="button" className="btn btn-primary" style={{ background: 'var(--success)' }} onClick={handleUpdateDirectly}>
                       直接儲存修改
                     </button>
                   )}
                   <button type="button" className="btn btn-primary" onClick={handleNext}>
-                    {editSchedule ? '下一步：更換代課' : '下一步：尋找代課'}
+                    {isBulkEdit ? '下一步：批次指派代課' : (firstSched ? '下一步：更換代課' : '下一步：尋找代課')}
                   </button>
                 </div>
               </div>

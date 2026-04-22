@@ -110,10 +110,19 @@ export default function Calendar() {
   const handleSaveSchedule = async (scheduleData) => {
     try {
       if (Array.isArray(scheduleData)) {
-        if (editingSchedule) await deleteSchedule(editingSchedule.id);
+        if (editingSchedule) {
+          if (Array.isArray(editingSchedule)) {
+            for (const s of editingSchedule) await deleteSchedule(s.id);
+          } else {
+            await deleteSchedule(editingSchedule.id);
+          }
+        }
         for (const d of scheduleData) await addSchedule(d);
       } else {
-        if (scheduleData.id || editingSchedule?.id) {
+        if (editingSchedule && Array.isArray(editingSchedule)) {
+          for (const s of editingSchedule) await deleteSchedule(s.id);
+          await addSchedule(scheduleData);
+        } else if (scheduleData.id || editingSchedule?.id) {
           const targetId = scheduleData.id || editingSchedule?.id;
           await updateSchedule(targetId, scheduleData);
         } else {
@@ -121,10 +130,23 @@ export default function Calendar() {
         }
       }
       setShowModal(false);
+      setSelectedIds([]); // 編輯後清空選取
     } catch (error) {
       console.error('Save failed:', error);
       alert('儲存失敗，請檢查網路連線');
     }
+  };
+
+  const handleBulkEdit = () => {
+    const selected = schedules.filter(s => selectedIds.includes(s.id));
+    if (selected.length === 0) return;
+    setEditingSchedule(selected);
+    setShowModal(true);
+  };
+
+  const handleGroupEdit = (groupItems) => {
+    setEditingSchedule(groupItems);
+    setShowModal(true);
   };
 
   const handleDeleteSchedule = async (id) => {
@@ -464,6 +486,7 @@ export default function Calendar() {
               <div className="bulk-actions-bar">
                 <span className="bulk-count">已選擇 {selectedIds.length} 筆</span>
                 <div className="bulk-btns">
+                  <button className="btn-icon" onClick={handleBulkEdit} title="批次編輯" style={{background:'#fff', color:'var(--primary-500)'}}>✏️</button>
                   <button className="btn-icon" onClick={() => handleBulkStatus('confirmed')} title="全部確認" style={{background:'#fff', color:'var(--success)'}}>✅</button>
                   <button className="btn-icon" onClick={() => handleBulkStatus('rejected')} title="全部拒絕" style={{background:'#fff', color:'var(--danger)'}}>❌</button>
                   <button className="btn-icon" onClick={handleBulkDelete} title="全部刪除" style={{background:'#fff', color:'var(--text-muted)'}}>🗑️</button>
@@ -491,15 +514,18 @@ export default function Calendar() {
                            <span className={`compact-status ${group.status}`}>{STATUS_MAP[group.status]?.label}</span>
                            <span style={{fontWeight: 600}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
                          </div>
-                         <label className="checkbox-group-label" onClick={(e) => { e.preventDefault(); toggleSelectGroup(group.items); }}>
-                           <input 
-                             type="checkbox" 
-                             className="custom-checkbox" 
-                             checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(s.id))}
-                             readOnly
-                           />
-                           全選
-                         </label>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                           <button className="btn-icon" onClick={() => handleGroupEdit(group.items)} title="編輯此群組">✏️</button>
+                           <label className="checkbox-group-label" onClick={(e) => { e.preventDefault(); toggleSelectGroup(group.items); }}>
+                             <input 
+                               type="checkbox" 
+                               className="custom-checkbox" 
+                               checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(s.id))}
+                               readOnly
+                             />
+                             全選
+                           </label>
+                         </div>
                        </div>
                        {group.items.map(s => (
                          <div key={s.id} style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
