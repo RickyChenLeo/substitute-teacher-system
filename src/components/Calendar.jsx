@@ -542,12 +542,7 @@ export default function Calendar() {
                                <span style={{fontWeight: 600, fontSize: '13px'}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
                                {isCollapsed && (
                                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                                   節次: {allPeriods.map(p => {
-                                      if (p === 1) return '導';
-                                      if (p === 6) return '午';
-                                      if (p >= 2 && p <= 5) return p - 1;
-                                      return p - 2;
-                                   }).join(', ')}
+                                   節次: {allPeriods.map(p => PERIOD_LABELS[p-1]).join(', ')}
                                  </span>
                                )}
                              </div>
