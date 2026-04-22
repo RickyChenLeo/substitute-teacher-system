@@ -534,12 +534,12 @@ export default function Calendar() {
                              cursor: 'pointer'
                            }}
                          >
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
                              <span className={`compact-status ${group.status}`} style={{ fontSize: '10px' }}>
                                {STATUS_MAP[group.status]?.label}
                              </span>
-                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                               <span style={{fontWeight: 600, fontSize: '13px'}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
+                             <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                               <span style={{fontWeight: 600, fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
                                {isCollapsed && (
                                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                                    節次: {allPeriods.map(p => PERIOD_LABELS[p-1]).join(', ')}

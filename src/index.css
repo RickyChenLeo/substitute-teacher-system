@@ -1971,6 +1971,17 @@ body {
 .custom-checkbox:checked {
   background: var(--primary-500);
   border-color: var(--primary-500);
+  animation: checkboxPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.custom-checkbox:active {
+  transform: scale(0.9);
+}
+
+@keyframes checkboxPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 .custom-checkbox:checked::after {
@@ -2135,6 +2146,11 @@ body {
   padding-left: 4px;
   border-left: 2px solid var(--border-subtle);
   margin-left: 4px;
+}
+
+.compact-status {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ====== Subject Grid selection ====== */
