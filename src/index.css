@@ -1554,6 +1554,18 @@ body {
   color: var(--success);
 }
 
+.period-check-item.is-busy {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-subtle);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.period-check-item.is-busy .period-check-label {
+  color: var(--text-muted);
+}
+
 .period-checkbox {
   display: none;
 }

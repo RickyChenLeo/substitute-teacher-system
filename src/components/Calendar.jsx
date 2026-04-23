@@ -640,6 +640,7 @@ export default function Calendar() {
         <ScheduleModal
           date={selectedDate}
           teachers={teachers}
+          schedules={schedules}
           editSchedule={editingSchedule}
           onSave={handleSaveSchedule}
           onClose={() => setShowModal(false)}

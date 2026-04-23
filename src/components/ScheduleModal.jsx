@@ -14,7 +14,7 @@ const SCHEDULE_SUBJECTS = [
 ];
 
 
-export default function ScheduleModal({ date, teachers, editSchedule, onSave, onClose }) {
+export default function ScheduleModal({ date, teachers, schedules, editSchedule, onSave, onClose }) {
   const isBulkEdit = Array.isArray(editSchedule);
   const firstSched = isBulkEdit ? editSchedule[0] : editSchedule;
   const sharedLeaveTeacher = isBulkEdit ? firstSched?.leaveTeacherName : '';
@@ -65,10 +65,32 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
     }
     return initial;
   });
-
   const activeDate = firstSched?.date || date;
   const isQuickBook = !!(!isBulkEdit && editSchedule?.teacherId && !editSchedule?.id);
   const targetTeacherName = isQuickBook ? teachers.find(t => t.id === editSchedule.teacherId)?.name : '';
+
+  // 計算該老師當天已佔用的節次 (排除當前正在編輯的這幾筆)
+  const busyPeriodsForTeacher = useMemo(() => {
+    const teacherId = firstSched?.teacherId;
+    if (!teacherId || !schedules) return new Set();
+
+    const editIds = isBulkEdit ? editSchedule.map(s => s.id) : [editSchedule?.id];
+    
+    const teacherSchedules = schedules.filter(s => 
+      s.teacherId === teacherId && 
+      s.date === activeDate &&
+      !editIds.includes(s.id) &&
+      s.status !== 'rejected'
+    );
+    
+    const busy = new Set();
+    teacherSchedules.forEach(s => {
+      if (s.classPeriods) {
+        s.classPeriods.forEach(p => busy.add(p));
+      }
+    });
+    return busy;
+  }, [firstSched?.teacherId, activeDate, schedules, editSchedule, isBulkEdit]);
 
   const handleChange = (field, value) => {
     setForm(prev => {
@@ -82,6 +104,8 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
   };
 
   const togglePeriod = (periodNum) => {
+    if (busyPeriodsForTeacher.has(periodNum)) return; // 禁止選擇已有課的節次
+
     setForm(prev => {
       const exists = prev.selectedPeriods.includes(periodNum);
       const newPeriods = exists
@@ -368,23 +392,29 @@ export default function ScheduleModal({ date, teachers, editSchedule, onSave, on
                     : '請勾選整天中需要代課的節次，未勾選的節次可安排其他代課'}
                 </p>
                 <div className="period-check-grid">
-                  {availablePeriods.map(p => (
-                    <label
-                      key={p}
-                      className={`period-check-item ${form.selectedPeriods.includes(p) ? 'checked' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={form.selectedPeriods.includes(p)}
-                        onChange={() => togglePeriod(p)}
-                        className="period-checkbox"
-                      />
-                      <span className="period-check-label">{PERIOD_LABELS[p - 1]}</span>
-                      <span className="period-check-indicator">
-                        {form.selectedPeriods.includes(p) ? '✓' : ''}
-                      </span>
-                    </label>
-                  ))}
+                  {availablePeriods.map(p => {
+                    const isBusy = busyPeriodsForTeacher.has(p);
+                    return (
+                      <label
+                        key={p}
+                        className={`period-check-item ${form.selectedPeriods.includes(p) ? 'checked' : ''} ${isBusy ? 'is-busy' : ''}`}
+                        title={isBusy ? '老師此節已有排程' : ''}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.selectedPeriods.includes(p)}
+                          onChange={() => togglePeriod(p)}
+                          disabled={isBusy}
+                          className="period-checkbox"
+                        />
+                        <span className="period-check-label">{PERIOD_LABELS[p - 1]}</span>
+                        <span className="period-check-indicator">
+                          {isBusy ? '🚫' : (form.selectedPeriods.includes(p) ? '✓' : '')}
+                        </span>
+                        {isBusy && <span style={{ position: 'absolute', bottom: '2px', fontSize: '9px', color: 'var(--danger)' }}>已有課</span>}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}
