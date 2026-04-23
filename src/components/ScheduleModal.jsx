@@ -77,7 +77,7 @@ export default function ScheduleModal({ date, teachers, schedules, editSchedule,
     const editIds = isBulkEdit ? editSchedule.map(s => s.id) : [editSchedule?.id];
     
     const teacherSchedules = schedules.filter(s => 
-      s.teacherId === teacherId && 
+      String(s.teacherId) === String(teacherId) && 
       s.date === activeDate &&
       !editIds.includes(s.id) &&
       s.status !== 'rejected'
@@ -363,16 +363,23 @@ export default function ScheduleModal({ date, teachers, schedules, editSchedule,
                   </span>
                 </label>
                 <div className="period-grid">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      className={`period-btn ${form.selectedPeriods.includes(p) ? 'active' : ''}`}
-                      onClick={() => togglePeriod(p)}
-                    >
-                      {PERIOD_LABELS[p - 1]}
-                    </button>
-                  ))}
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(p => {
+                    const isBusy = busyPeriodsForTeacher.has(p);
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        className={`period-btn ${form.selectedPeriods.includes(p) ? 'active' : ''} ${isBusy ? 'is-busy' : ''}`}
+                        onClick={() => !isBusy && togglePeriod(p)}
+                        disabled={isBusy}
+                        title={isBusy ? '老師此節已有排程' : ''}
+                        style={{ position: 'relative' }}
+                      >
+                        {PERIOD_LABELS[p - 1]}
+                        {isBusy && <span style={{ position: 'absolute', top: '-6px', right: '-6px', fontSize: '10px' }}>🚫</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

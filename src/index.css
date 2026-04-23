@@ -1519,6 +1519,15 @@ body {
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
+.period-btn.is-busy {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--bg-glass-hover) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-muted) !important;
+  pointer-events: none;
+}
+
 /* Period Checkbox Grid (halfday/fullday) */
 .period-check-grid {
   display: grid;
