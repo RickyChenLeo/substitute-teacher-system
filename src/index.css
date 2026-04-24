@@ -2013,8 +2013,9 @@ body {
 .custom-checkbox:checked::after {
   content: "✓";
   color: white;
-  font-size: 12px;
-  font-weight: bold;
+  font-size: 14px; /* 稍微調大勾選符號 */
+  font-weight: 900; /* 極粗體，增加識別度 */
+  display: block;
 }
 
 .checkbox-group-label {

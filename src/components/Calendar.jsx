@@ -61,13 +61,14 @@ export default function Calendar() {
 
   // 勾選邏輯
   const toggleSelect = (id) => {
+    const sId = String(id);
     setSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+      prev.includes(sId) ? prev.filter(i => i !== sId) : [...prev, sId]
     );
   };
 
   const toggleSelectGroup = (items) => {
-    const itemIds = items.map(s => s.id);
+    const itemIds = items.map(s => String(s.id));
     const allSelected = itemIds.every(id => selectedIds.includes(id));
     if (allSelected) {
       setSelectedIds(prev => prev.filter(id => !itemIds.includes(id)));
@@ -562,7 +563,7 @@ export default function Calendar() {
                                <input 
                                  type="checkbox" 
                                  className="custom-checkbox" 
-                                 checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(s.id))}
+                                 checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(String(s.id)))}
                                  readOnly
                                />
                                <span style={{ fontSize: '11px' }}>全選</span>
@@ -578,7 +579,7 @@ export default function Calendar() {
                                  <input 
                                     type="checkbox" 
                                     className="custom-checkbox" 
-                                    checked={selectedIds.includes(s.id)}
+                                    checked={selectedIds.includes(String(s.id))}
                                     onChange={() => toggleSelect(s.id)}
                                  />
                                  <span style={{ flex: 1, fontSize: '12px' }}>
