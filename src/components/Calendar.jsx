@@ -72,16 +72,16 @@ export default function Calendar() {
   };
 
   const toggleSelectGroup = (items) => {
+    if (!items || items.length === 0) return;
+    
     const itemIds = items.map(s => String(s.id));
     setSelectedIds(prev => {
       const cleanPrev = prev.map(i => String(i));
       const allSelected = itemIds.every(id => cleanPrev.includes(id));
       
       if (allSelected) {
-        // 取消全選：移除該群組的所有 ID
         return cleanPrev.filter(id => !itemIds.includes(id));
       } else {
-        // 全選：加入該群組所有尚未選取的 ID
         const newIds = itemIds.filter(id => !cleanPrev.includes(id));
         return [...cleanPrev, ...newIds];
       }
@@ -568,19 +568,23 @@ export default function Calendar() {
                                )}
                              </div>
                            </div>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={e => e.stopPropagation()}>
-                             <button className="btn-icon" onClick={() => handleGroupEdit(group.items)} title="編輯群組" style={{ opacity: 0.7 }}>✏️</button>
-                             <label className="checkbox-group-label" onClick={(e) => { e.preventDefault(); toggleSelectGroup(group.items); }}>
-                               <input 
-                                 type="checkbox" 
-                                 className="custom-checkbox" 
-                                 checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(String(s.id)))}
-                                 readOnly
-                               />
-                               <span style={{ fontSize: '11px' }}>全選</span>
-                             </label>
-                             <span style={{ marginLeft: '4px', fontSize: '12px', opacity: 0.5 }}>{isCollapsed ? '▼' : '▲'}</span>
-                           </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={e => e.stopPropagation()}>
+                              <button className="btn-icon" onClick={() => handleGroupEdit(group.items)} title="編輯群組" style={{ opacity: 0.7 }}>✏️</button>
+                              <div 
+                                className="checkbox-group-wrapper" 
+                                onClick={() => toggleSelectGroup(group.items)}
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px' }}
+                              >
+                                <input 
+                                  type="checkbox" 
+                                  className="custom-checkbox" 
+                                  checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(String(s.id)))}
+                                  onChange={() => {}} 
+                                />
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>全選</span>
+                              </div>
+                              <span style={{ marginLeft: '4px', fontSize: '12px', opacity: 0.5 }}>{isCollapsed ? '▼' : '▲'}</span>
+                            </div>
                          </div>
                          
                          {!isCollapsed && (
