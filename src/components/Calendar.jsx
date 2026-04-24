@@ -62,19 +62,30 @@ export default function Calendar() {
   // 勾選邏輯
   const toggleSelect = (id) => {
     const sId = String(id);
-    setSelectedIds(prev => 
-      prev.includes(sId) ? prev.filter(i => i !== sId) : [...prev, sId]
-    );
+    setSelectedIds(prev => {
+      // 強制將舊狀態也轉為字串進行清理，避免混用
+      const cleanPrev = prev.map(i => String(i));
+      return cleanPrev.includes(sId) 
+        ? cleanPrev.filter(i => i !== sId) 
+        : [...cleanPrev, sId];
+    });
   };
 
   const toggleSelectGroup = (items) => {
     const itemIds = items.map(s => String(s.id));
-    const allSelected = itemIds.every(id => selectedIds.includes(id));
-    if (allSelected) {
-      setSelectedIds(prev => prev.filter(id => !itemIds.includes(id)));
-    } else {
-      setSelectedIds(prev => [...new Set([...prev, ...itemIds])]);
-    }
+    setSelectedIds(prev => {
+      const cleanPrev = prev.map(i => String(i));
+      const allSelected = itemIds.every(id => cleanPrev.includes(id));
+      
+      if (allSelected) {
+        // 取消全選：移除該群組的所有 ID
+        return cleanPrev.filter(id => !itemIds.includes(id));
+      } else {
+        // 全選：加入該群組所有尚未選取的 ID
+        const newIds = itemIds.filter(id => !cleanPrev.includes(id));
+        return [...cleanPrev, ...newIds];
+      }
+    });
   };
 
   // 批次處理
