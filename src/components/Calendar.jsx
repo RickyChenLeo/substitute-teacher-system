@@ -290,11 +290,19 @@ export default function Calendar() {
 
                     return (
                       <>
-                        {groupEntries.slice(0, 2).map(([name, data]) => (
-                          <div key={name} className={`calendar-tag-item ${data.status}`} style={{ fontSize: '10px' }}>
-                            {name} ({[...new Set(data.periods)].sort((a,b)=>a-b).map(getShortPeriod).join(',')})
-                          </div>
-                        ))}
+                        {groupEntries.slice(0, 3).map(([name, data]) => {
+                          const sortedPeriods = [...new Set(data.periods)].sort((a,b)=>a-b);
+                          const periodDisplay = sortedPeriods.length > 0 
+                            ? sortedPeriods.map(getShortPeriod).join(',') 
+                            : '未定';
+                          
+                          return (
+                            <div key={name} className={`calendar-tag-card ${data.status}`}>
+                              <span className="tag-name">{name}</span>
+                              <span className="tag-periods">{periodDisplay}</span>
+                            </div>
+                          );
+                        })}
                         {groupEntries.length > 2 && (
                           <div className="calendar-tag-item" style={{ opacity: 0.5, fontSize: '9px', textAlign: 'center' }}>
                             + 還有 {groupEntries.length - 2} 位

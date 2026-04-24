@@ -4,13 +4,13 @@ import { getAvailableTeachersForPeriods } from '../utils/storage';
 
 // 限定七大科目
 const SCHEDULE_SUBJECTS = [
-  { id: 'chinese', name: '國文', icon: '📖' },
-  { id: 'english', name: '英文', icon: '🌍' },
-  { id: 'math', name: '數學', icon: '🔢' },
-  { id: 'science', name: '自然', icon: '🔬' },
-  { id: 'social', name: '社會', icon: '🏛️' },
-  { id: 'pe', name: '體育', icon: '⚽' },
-  { id: 'health', name: '健康', icon: '❤️' },
+  { id: 'chinese', name: '國文' },
+  { id: 'english', name: '英文' },
+  { id: 'math', name: '數學' },
+  { id: 'science', name: '自然' },
+  { id: 'social', name: '社會' },
+  { id: 'pe', name: '體育' },
+  { id: 'health', name: '健康' },
 ];
 
 
@@ -438,9 +438,9 @@ export default function ScheduleModal({ date, teachers, schedules, editSchedule,
                       key={s.id}
                       className={`subject-tile ${form.subject === s.name ? 'active' : ''}`}
                       onClick={() => handleChange('subject', s.name)}
+                      style={{ padding: '10px 4px' }}
                     >
-                      <span className="subject-tile-icon">{s.icon}</span>
-                      <span className="subject-tile-name">{s.name}</span>
+                      <span className="subject-tile-name" style={{ fontSize: '14px' }}>{s.name}</span>
                     </div>
                   ))}
                 </div>
@@ -475,7 +475,7 @@ export default function ScheduleModal({ date, teachers, schedules, editSchedule,
                         onChange={e => updatePeriodDetail(p, 'subject', e.target.value)}
                       >
                         <option value="">選擇科目</option>
-                        {SCHEDULE_SUBJECTS.map(s => <option key={s.id} value={s.name}>{s.icon} {s.name}</option>)}
+                        {SCHEDULE_SUBJECTS.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                       </select>
                       <input 
                         className="form-input" 

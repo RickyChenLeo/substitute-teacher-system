@@ -2250,11 +2250,77 @@ body {
 }
 
 .subject-tile.active .subject-tile-name {
-  color: var(--text-primary);
+  color: var(--text-accent);
 }
 
 @media (max-width: 480px) {
   .subject-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+/* Calendar Tag Cards */
+.calendar-tag-card {
+  display: flex;
+  flex-direction: column;
+  padding: 3px 6px;
+  margin-bottom: 3px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--primary-500);
+  font-size: 10px;
+  line-height: 1.3;
+  transition: all 0.2s;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.calendar-tag-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(2px);
+}
+
+.calendar-tag-card.confirmed { border-left-color: var(--success); }
+.calendar-tag-card.pending { border-left-color: var(--warning); }
+.calendar-tag-card.unassigned { border-left-color: var(--primary-500); }
+
+.calendar-tag-card .tag-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.calendar-tag-card .tag-periods {
+  font-size: 9px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0 4px;
+  border-radius: 2px;
+  width: fit-content;
+  margin-top: 1px;
+}
+
+/* Fix Windows Select White-out & styling */
+.form-select {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.form-select:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Windows Chrome/Edge Option fix */
+.form-select option {
+  background-color: #1e1e2e !important;
+  color: #ffffff !important;
+  padding: 12px !important;
 }
