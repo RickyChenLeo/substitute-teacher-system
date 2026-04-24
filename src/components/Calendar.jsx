@@ -303,9 +303,9 @@ export default function Calendar() {
                             </div>
                           );
                         })}
-                        {groupEntries.length > 2 && (
-                          <div className="calendar-tag-item" style={{ opacity: 0.5, fontSize: '9px', textAlign: 'center' }}>
-                            + 還有 {groupEntries.length - 2} 位
+                        {groupEntries.length > 3 && (
+                          <div className="calendar-tag-card" style={{ opacity: 0.5, fontSize: '9px', textAlign: 'center', borderLeft: 'none', background: 'transparent' }}>
+                            + 還有 {groupEntries.length - 3} 位
                           </div>
                         )}
                       </>
