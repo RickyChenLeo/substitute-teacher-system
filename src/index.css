@@ -960,14 +960,14 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* 改為靠上對齊，避免內容過多時日期數字上下跳動 */
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
   position: relative;
   gap: 4px;
-  padding: 4px;
-  min-height: 56px;
+  padding: 8px 4px 4px 4px; /* 增加上方內距 */
+  min-height: 80px; /* 增加最小高度以容納標籤 */
 }
 
 .calendar-day:hover {
@@ -987,6 +987,7 @@ body {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+  margin-bottom: 2px;
 }
 
 .calendar-day.other-month .calendar-day-number {
@@ -2141,12 +2142,14 @@ body {
 .schedule-detail-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 8px;
   margin-bottom: 4px;
-  padding: 6px 8px;
-  border-radius: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
   background: rgba(255, 255, 255, 0.02);
   transition: all 0.2s;
+  width: fit-content; /* 讓寬度貼合內容，不再佔滿整行 */
 }
 
 .schedule-detail-row:hover {
