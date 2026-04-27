@@ -461,8 +461,16 @@ export default function Calendar() {
       })
     }));
 
-    // 對分組本身也按最早節次排序
+    // 對分組本身先按「是否有代課/狀態」排序，再按最早節次排序
     return sortedGroups.sort((a, b) => {
+      const statusPriority = { unassigned: 1, pending: 2, confirmed: 3 };
+      const priorityA = statusPriority[a.status] || 4;
+      const priorityB = statusPriority[b.status] || 4;
+      
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
       const aMin = Math.min(...(a.items.flatMap(i => i.classPeriods || [99])));
       const bMin = Math.min(...(b.items.flatMap(i => i.classPeriods || [99])));
       return aMin - bMin;
