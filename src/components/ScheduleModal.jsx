@@ -11,6 +11,8 @@ const SCHEDULE_SUBJECTS = [
   { id: 'social', name: '社會' },
   { id: 'pe', name: '體育' },
   { id: 'health', name: '健康' },
+  { id: 'comprehensive', name: '綜合' },
+  { id: 'school-based', name: '校定課程' },
 ];
 
 
@@ -60,7 +62,7 @@ export default function ScheduleModal({ date, teachers, schedules, editSchedule,
       });
     } else if (firstSched?.id && firstSched.classPeriods?.length > 0) {
       firstSched.classPeriods.forEach(p => {
-        initial[p] = { subject: firstSched.subject || '', className: firstSched.className || '' };
+        initial[p] = firstSched.periodDetails?.[p] || { subject: firstSched.subject || '', className: firstSched.className || '' };
       });
     }
     return initial;
@@ -197,12 +199,13 @@ export default function ScheduleModal({ date, teachers, schedules, editSchedule,
       ...(singleId && { id: singleId }),
       leaveTeacherName: form.leaveTeacherName.trim(),
       teacherId,
-      subject: form.subject,
+      subject: periodDetails[form.selectedPeriods[0]]?.subject || '', // 取第一節為主要科目
+      periodDetails, // 儲存各節次詳細資訊
       periodType: form.periodType,
       period: form.periodType,
       classPeriods: form.selectedPeriods,
       periodDisplay,
-      className: form.className,
+      className: periodDetails[form.selectedPeriods[0]]?.className || '',
       note: form.note,
       date: activeDate,
       status
@@ -226,9 +229,9 @@ export default function ScheduleModal({ date, teachers, schedules, editSchedule,
     onSave(constructScheduleData(firstSched?.teacherId || '', firstSched?.status || 'unassigned'));
   };
 
-  const searchSubject = form.periodType === 'single' 
+  const searchSubject = form.selectedPeriods.length > 0 
     ? periodDetails[form.selectedPeriods[0]]?.subject 
-    : form.subject;
+    : '';
 
   // 取空閒老師與分類
   const recommendedTeachers = useMemo(() => {
@@ -426,44 +429,10 @@ export default function ScheduleModal({ date, teachers, schedules, editSchedule,
               </div>
             )}
 
-            {/* 代課科目 (非單節時顯示全域) */}
-            {form.periodType !== 'single' && (
-              <div className="form-group">
-                <label className="form-label">
-                  代課科目 (選填)
-                </label>
-                <div className="subject-grid">
-                  {SCHEDULE_SUBJECTS.map(s => (
-                    <div
-                      key={s.id}
-                      className={`subject-tile ${form.subject === s.name ? 'active' : ''}`}
-                      onClick={() => handleChange('subject', s.name)}
-                      style={{ padding: '10px 4px' }}
-                    >
-                      <span className="subject-tile-name" style={{ fontSize: '14px' }}>{s.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 班級 (非單節時顯示全域) */}
-            {form.periodType !== 'single' && (
-              <div className="form-group">
-                <label className="form-label">班級 (選填)</label>
-                <input
-                  className="form-input"
-                  placeholder="例如: 408班"
-                  value={form.className}
-                  onChange={e => handleChange('className', e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* 一節一單模式的逐節設定區塊 */}
-            {form.periodType === 'single' && form.selectedPeriods.length > 0 && (
+            {/* 逐節設定區塊 (取代舊的全域科目班級，所有模式皆可設定) */}
+            {form.selectedPeriods.length > 0 && (
               <div className="form-group" style={{ background: 'var(--bg-glass)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-                <label className="form-label" style={{ marginBottom: '12px' }}>各節次科目與班級對應 (選填)</label>
+                <label className="form-label" style={{ marginBottom: '12px' }}>各節次代課科目與班級 (選填)</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {form.selectedPeriods.map(p => (
                     <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
