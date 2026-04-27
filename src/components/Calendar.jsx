@@ -302,7 +302,7 @@ export default function Calendar() {
 
                     return (
                       <>
-                        {groupEntries.slice(0, 3).map(([name, data]) => {
+                        {groupEntries.slice(0, 2).map(([name, data]) => {
                           const sortedPeriods = [...new Set(data.periods)].sort((a,b)=>a-b);
                           const periodDisplay = sortedPeriods.length > 0 
                             ? sortedPeriods.map(getShortPeriod).join(',') 
@@ -315,9 +315,9 @@ export default function Calendar() {
                             </div>
                           );
                         })}
-                        {groupEntries.length > 3 && (
-                          <div className="calendar-tag-card" style={{ opacity: 0.5, fontSize: '9px', textAlign: 'center', borderLeft: 'none', background: 'transparent' }}>
-                            + 還有 {groupEntries.length - 3} 位
+                        {groupEntries.length > 2 && (
+                          <div className="calendar-tag-card" style={{ opacity: 0.5, fontSize: '9px', textAlign: 'center', borderLeft: 'none', background: 'transparent', padding: '2px 0' }}>
+                            + 還有 {groupEntries.length - 2} 位
                           </div>
                         )}
                       </>

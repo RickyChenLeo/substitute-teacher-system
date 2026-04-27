@@ -968,6 +968,7 @@ body {
   gap: 4px;
   padding: 28px 4px 4px 4px; /* 上方留出 28px 給絕對定位的數字 */
   min-height: 100px; /* 統一最小高度 */
+  overflow: hidden; /* 防止內容過多撐破格位，影響下方排版 */
 }
 
 .calendar-day:hover {
