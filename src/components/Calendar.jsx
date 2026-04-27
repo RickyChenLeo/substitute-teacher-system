@@ -316,7 +316,7 @@ export default function Calendar() {
                           );
                         })}
                         {groupEntries.length > 2 && (
-                          <div className="calendar-tag-card" style={{ opacity: 0.5, fontSize: '9px', textAlign: 'center', borderLeft: 'none', background: 'transparent', padding: '2px 0' }}>
+                          <div className="calendar-more-indicator">
                             + 還有 {groupEntries.length - 2} 位
                           </div>
                         )}
