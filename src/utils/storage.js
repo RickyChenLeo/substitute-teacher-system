@@ -17,21 +17,47 @@ export function initializeFirebaseSync() {
   if (window._sUnsub) window._sUnsub();
   if (window._tUnsub) window._tUnsub();
 
-  const tUnsub = onSnapshot(collection(db, 'teachers'), snapshot => {
-    // 使用 Map 去重，防止 ID 重複產生幻影
-    const uniqueMap = new Map();
-    // 必須把 id 放在最後解構，確保能蓋過資料庫內可能殘留的 id
-    snapshot.docs.forEach(d => uniqueMap.set(d.id, { ...d.data(), id: d.id }));
-    memoryTeachers = Array.from(uniqueMap.values());
-    teacherListeners.forEach(cb => cb([...memoryTeachers]));
-  }, err => console.error('Teacher Sync Error:', err));
+  // Retry control for quota errors
+  const maxRetries = 5;
+  let teacherRetryCount = 0;
+  let scheduleRetryCount = 0;
+  const tUnsub = onSnapshot(
+    collection(db, 'teachers'),
+    snapshot => {
+      const uniqueMap = new Map();
+      snapshot.docs.forEach(d => uniqueMap.set(d.id, { ...d.data(), id: d.id }));
+      memoryTeachers = Array.from(uniqueMap.values());
+      teacherListeners.forEach(cb => cb([...memoryTeachers]));
+    },
+    err => {
+      console.error('Teacher Sync Error:', err);
+      if ((err.code === 'resource-exhausted' || err.message?.includes('RESOURCE_EXHAUSTED')) && teacherRetryCount < maxRetries) {
+        teacherRetryCount++;
+        console.warn(`Retrying teacher sync (${teacherRetryCount}/${maxRetries})`);
+        setTimeout(initializeFirebaseSync, 2000 * teacherRetryCount);
+      }
+    }
+  );
   
-  const sUnsub = onSnapshot(collection(db, 'schedules'), snapshot => {
-    const uniqueMap = new Map();
-    snapshot.docs.forEach(d => uniqueMap.set(d.id, { ...d.data(), id: d.id }));
-    memorySchedules = Array.from(uniqueMap.values());
-    scheduleListeners.forEach(cb => cb([...memorySchedules]));
-  }, err => console.error('Schedule Sync Error:', err));
+  const sUnsub = onSnapshot(
+    collection(db, 'schedules'),
+    snapshot => {
+      const uniqueMap = new Map();
+      snapshot.docs.forEach(d => uniqueMap.set(d.id, { ...d.data(), id: d.id }));
+      memorySchedules = Array.from(uniqueMap.values());
+      scheduleListeners.forEach(cb => cb([...memorySchedules]));
+      // Reset schedule retry count on successful fetch
+      scheduleRetryCount = 0;
+    },
+    err => {
+      console.error('Schedule Sync Error:', err);
+      if ((err.code === 'resource-exhausted' || err.message?.includes('RESOURCE_EXHAUSTED')) && scheduleRetryCount < maxRetries) {
+        scheduleRetryCount++;
+        console.warn(`Retrying schedule sync (${scheduleRetryCount}/${maxRetries})`);
+        setTimeout(initializeFirebaseSync, 2000 * scheduleRetryCount);
+      }
+    }
+  );
   
   window._tUnsub = tUnsub;
   window._sUnsub = sUnsub;

@@ -443,39 +443,54 @@ export default function Calendar() {
 
   // 右側麵板
   const selectedSchedules = getSchedulesForDate(selectedDate);
-  const groupedSchedules = useMemo(() => {
+  // 以代課老師為單位進行分組 — 讓同一個代課老師當天所有節數一目了然
+  const groupedByTeacher = useMemo(() => {
     const groups = {};
     selectedSchedules.forEach(s => {
-      const key = `${s.leaveTeacherName}-${s.teacherId}-${s.status}`;
-      if (!groups[key]) groups[key] = { id: key, leaveTeacherName: s.leaveTeacherName, teacherId: s.teacherId, status: s.status, items: [] };
+      const key = s.teacherId || '__unassigned__';
+      if (!groups[key]) {
+        groups[key] = {
+          id: key,
+          teacherId: s.teacherId,
+          teacherName: getTeacherName(s.teacherId),
+          items: [],
+        };
+      }
       groups[key].items.push(s);
     });
-    
-    // 對每個分組內的項目按節次排序
-    const sortedGroups = Object.values(groups).map(group => ({
-      ...group,
-      items: [...group.items].sort((a, b) => {
-        const aPeriod = a.classPeriods?.[0] || 0;
-        const bPeriod = b.classPeriods?.[0] || 0;
-        return aPeriod - bPeriod;
-      })
-    }));
 
-    // 對分組本身先按「是否有代課/狀態」排序，再按最早節次排序
-    return sortedGroups.sort((a, b) => {
+    return Object.values(groups).map(group => {
+      // 彙整所有節次
+      const allPeriods = [...new Set(group.items.flatMap(s => s.classPeriods || []))].sort((a, b) => a - b);
+      // 每個節次的佔用狀態 (1~9)
+      const periodMap = {};
+      group.items.forEach(s => {
+        (s.classPeriods || []).forEach(p => {
+          periodMap[p] = s.status; // 記錄該節的狀態
+        });
+      });
+      // 統計狀態
+      const statuses = [...new Set(group.items.map(s => s.status))];
+      // 按節次排序 items
+      const sortedItems = [...group.items].sort((a, b) => {
+        const ap = a.classPeriods?.[0] || 0;
+        const bp = b.classPeriods?.[0] || 0;
+        return ap - bp;
+      });
+      return { ...group, allPeriods, periodMap, statuses, items: sortedItems };
+    }).sort((a, b) => {
+      // 優先顯示待處理的
       const statusPriority = { unassigned: 1, pending: 2, confirmed: 3 };
-      const priorityA = statusPriority[a.status] || 4;
-      const priorityB = statusPriority[b.status] || 4;
-      
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
-      
-      const aMin = Math.min(...(a.items.flatMap(i => i.classPeriods || [99])));
-      const bMin = Math.min(...(b.items.flatMap(i => i.classPeriods || [99])));
+      const getMinPriority = (statuses) => Math.min(...statuses.map(s => statusPriority[s] || 4));
+      const pa = getMinPriority(a.statuses);
+      const pb = getMinPriority(b.statuses);
+      if (pa !== pb) return pa - pb;
+      // 再按最早節次排序
+      const aMin = Math.min(...(a.allPeriods.length > 0 ? a.allPeriods : [99]));
+      const bMin = Math.min(...(b.allPeriods.length > 0 ? b.allPeriods : [99]));
       return aMin - bMin;
     });
-  }, [selectedSchedules]);
+  }, [selectedSchedules, teachers]);
 
   return (
     <div className="calendar-page animate-in">
@@ -539,62 +554,65 @@ export default function Calendar() {
                 <button className="btn-icon" onClick={handleRefresh}>🔄</button>
               </div>
               
-              {groupedSchedules.length === 0 ? (
+              {groupedByTeacher.length === 0 ? (
                 <div className="empty-state" style={{ padding: '40px 0' }}>
                    <p className="empty-desc">此日無特殊排程</p>
                 </div>
               ) : (
                 <div className="schedule-list">
-                  {groupedSchedules.map(group => {
-                    const isCollapsed = collapsedGroups.has(group.id) || (group.status === 'confirmed' && !collapsedGroups.has(group.id + '_expanded'));
-                    const allPeriods = group.items.flatMap(s => s.classPeriods).sort((a,b)=>a-b);
-                    
+                  {groupedByTeacher.map(group => {
+                    const isCollapsed = collapsedGroups.has(group.id) || (group.statuses.every(s => s === 'confirmed') && !collapsedGroups.has(group.id + '_expanded'));
+                    const toggleKey = group.statuses.every(s => s === 'confirmed') ? group.id + '_expanded' : group.id;
+
                     return (
-                      <div key={group.id} className={`schedule-item-compact ${isCollapsed ? 'collapsed' : ''}`}>
+                      <div key={group.id} className="teacher-period-card">
+                         {/* Header: 代課老師名稱 + 節次視覺化 */}
                          <div 
-                           onClick={() => toggleGroupCollapse(isCollapsed ? (group.status === 'confirmed' ? group.id + '_expanded' : group.id) : (group.status === 'confirmed' ? group.id + '_expanded' : group.id))}
-                           style={{ 
-                             padding: '4px 0',
-                             marginBottom: isCollapsed ? '0' : '8px', 
-                             display: 'flex', 
-                             alignItems: 'center', 
-                             justifyContent: 'space-between',
-                             cursor: 'pointer',
-                             minHeight: '40px'
-                           }}
+                           className="teacher-period-header"
+                           onClick={() => toggleGroupCollapse(toggleKey)}
                          >
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-                             <span className={`compact-status ${group.status}`}>
-                               {STATUS_MAP[group.status]?.label}
-                             </span>
-                             <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                               <span style={{fontWeight: 600, fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{group.leaveTeacherName} → {getTeacherName(group.teacherId)}</span>
-                               {isCollapsed && (
-                                 <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                                   節次: {allPeriods.map(p => PERIOD_LABELS[p-1]).join(', ')}
-                                 </span>
-                               )}
+                           <div className="teacher-period-info">
+                             <div className="teacher-period-name-row">
+                               <span className="teacher-period-name">{group.teacherName}</span>
+                               <span className="teacher-period-count">{group.allPeriods.length} 節</span>
+                             </div>
+                             {/* 9 節次視覺化格 */}
+                             <div className="teacher-period-grid">
+                               {[1,2,3,4,5,6,7,8,9].map(p => {
+                                 const status = group.periodMap[p];
+                                 const shortLabel = p === 1 ? '導' : p === 6 ? '午' : (p >= 2 && p <= 5 ? p - 1 : p - 2);
+                                 return (
+                                   <div 
+                                     key={p}
+                                     className={`tp-dot ${status ? 'active ' + status : 'empty'}`}
+                                     title={PERIOD_LABELS[p-1] + (status ? ` (${STATUS_MAP[status]?.label})` : ' (空)')}
+                                   >
+                                     {shortLabel}
+                                   </div>
+                                 );
+                               })}
                              </div>
                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={e => e.stopPropagation()}>
-                              <button className="btn-icon" onClick={() => handleGroupEdit(group.items)} title="編輯群組" style={{ opacity: 0.7 }}>✏️</button>
-                              <div 
-                                className="checkbox-group-wrapper" 
-                                onClick={() => toggleSelectGroup(group.items)}
-                                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px' }}
-                              >
-                                <input 
-                                  type="checkbox" 
-                                  className="custom-checkbox" 
-                                  checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(String(s.id)))}
-                                  onChange={() => {}} 
-                                />
-                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>全選</span>
-                              </div>
-                              <span style={{ marginLeft: '4px', fontSize: '12px', opacity: 0.5 }}>{isCollapsed ? '▼' : '▲'}</span>
-                            </div>
+                           <div className="teacher-period-actions" onClick={e => e.stopPropagation()}>
+                             <button className="btn-icon" onClick={() => handleGroupEdit(group.items)} title="編輯群組" style={{ opacity: 0.7 }}>✏️</button>
+                             <div 
+                               className="checkbox-group-wrapper" 
+                               onClick={() => toggleSelectGroup(group.items)}
+                               style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px' }}
+                             >
+                               <input 
+                                 type="checkbox" 
+                                 className="custom-checkbox" 
+                                 checked={group.items.length > 0 && group.items.every(s => selectedIds.includes(String(s.id)))}
+                                 onChange={() => {}} 
+                               />
+                               <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>全選</span>
+                             </div>
+                             <span style={{ fontSize: '12px', opacity: 0.5, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); toggleGroupCollapse(toggleKey); }}>{isCollapsed ? '▼' : '▲'}</span>
+                           </div>
                          </div>
                          
+                         {/* 展開後的詳細排程列表 */}
                          {!isCollapsed && (
                            <div className="schedule-group-details animate-in" style={{ animationName: 'slideDown', animationDuration: '0.2s' }}>
                              {group.items.map(s => (
@@ -605,8 +623,16 @@ export default function Calendar() {
                                     checked={selectedIds.includes(String(s.id))}
                                     onChange={() => toggleSelect(s.id)}
                                  />
-                                 <span style={{ flex: 1, fontSize: '12px' }}>
-                                   {s.classPeriods.map(p => PERIOD_LABELS[p-1]).join(',')}
+                                 <span className={`compact-status ${s.status}`} style={{ fontSize: '9px', minWidth: '40px' }}>
+                                   {STATUS_MAP[s.status]?.label}
+                                 </span>
+                                 <span style={{ flex: 1, fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                   <span style={{ fontWeight: 500 }}>{s.classPeriods.map(p => PERIOD_LABELS[p-1]).join(', ')}</span>
+                                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                     {s.leaveTeacherName && `代 ${s.leaveTeacherName}`}
+                                     {s.subject && ` · ${s.subject}`}
+                                     {s.className && ` · ${s.className}`}
+                                   </span>
                                  </span>
                                  <div className="row-actions">
                                    {s.status === 'pending' && (

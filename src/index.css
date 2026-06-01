@@ -2186,6 +2186,126 @@ body {
   justify-content: center;
 }
 
+/* ====== Teacher Period Card (Sidebar Redesign) ====== */
+.teacher-period-card {
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.teacher-period-card:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-md);
+}
+
+.teacher-period-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  cursor: pointer;
+  gap: 8px;
+}
+
+.teacher-period-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.teacher-period-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.teacher-period-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.teacher-period-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--text-accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.teacher-period-grid {
+  display: flex;
+  gap: 3px;
+}
+
+.tp-dot {
+  width: 26px;
+  height: 22px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.tp-dot.empty {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  opacity: 0.5;
+}
+
+.tp-dot.active {
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.tp-dot.active.confirmed {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.tp-dot.active.pending {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.tp-dot.active.unassigned {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.tp-dot.active.rejected {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.teacher-period-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .schedule-group-details {
   padding-left: 16px;
   border-left: 2px solid rgba(99, 102, 241, 0.3); /* 使用主題色的垂直導引線 */
